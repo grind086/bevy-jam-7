@@ -6,9 +6,9 @@ use bevy::color::Color;
 /// - `#RGB`
 /// - `#RRGGBB`
 /// - `#RRGGBBAA`
-/// 
+///
 /// # Example
-/// 
+///
 /// ```ignore
 /// # use bevy::color::Color;
 /// # use client::theme::srgb_hex;
