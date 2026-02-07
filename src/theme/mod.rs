@@ -5,11 +5,14 @@
 
 pub mod interaction;
 pub mod palette;
+mod srgb_hex;
 pub mod widget;
+
+pub use srgb_hex::*;
 
 #[allow(unused_imports)]
 pub mod prelude {
-    pub use super::{interaction::InteractionPalette, palette as ui_palette, widget};
+    pub use super::{interaction::InteractionPalette, palette as ui_palette, srgb_hex, widget};
 }
 
 use bevy::prelude::*;
