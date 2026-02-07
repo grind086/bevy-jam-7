@@ -77,7 +77,7 @@ env:
   # The display name of the app produced by this workflow.
   # Applies to macOS releases.
   # Defaults to `app_package_name` if commented out.
-  #app_display_name: Bevy Jam 7
+  app_display_name: Bevy Jam 7
 
   # The short display name of the app produced by this workflow.
   # Applies to macOS releases.
