@@ -67,6 +67,7 @@ impl AssetLoader for LevelLoader {
         let terrain_colliders = LevelCollisionBuilder::from_grid(
             grid_size,
             terrain_layer.int_grid_csv.iter().map(|i| *i != 0).collect(),
+            true,
         )
         .build();
 

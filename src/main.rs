@@ -13,6 +13,7 @@ mod menus;
 mod screens;
 mod theme;
 
+use avian2d::PhysicsPlugins;
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
 fn main() -> AppExit {
@@ -43,6 +44,9 @@ impl Plugin for AppPlugin {
                     ..default()
                 }),
         );
+
+        // Physics
+        app.add_plugins(PhysicsPlugins::default().with_length_unit(16.0));
 
         // Add other plugins.
         app.add_plugins((

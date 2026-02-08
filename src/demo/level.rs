@@ -1,9 +1,11 @@
 //! Spawn the main level.
 
+use avian2d::prelude::DebugRender;
 use bevy::prelude::*;
 
 use crate::{
     asset_tracking::LoadResource,
+    assets::level::Level,
     audio::music,
     demo::player::{PlayerAssets, player},
     screens::Screen,
@@ -18,6 +20,8 @@ pub(super) fn plugin(app: &mut App) {
 pub struct LevelAssets {
     #[dependency]
     music: Handle<AudioSource>,
+    #[dependency]
+    level: Handle<Level>,
 }
 
 impl FromWorld for LevelAssets {
@@ -25,6 +29,7 @@ impl FromWorld for LevelAssets {
         let assets = world.resource::<AssetServer>();
         Self {
             music: assets.load("audio/music/Fluffing A Duck.ogg"),
+            level: assets.load("test/Level_0.ldtkl"),
         }
     }
 }
@@ -34,19 +39,42 @@ pub fn spawn_level(
     mut commands: Commands,
     level_assets: Res<LevelAssets>,
     player_assets: Res<PlayerAssets>,
+    levels: Res<Assets<Level>>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    commands.spawn((
-        Name::new("Level"),
-        Transform::default(),
-        Visibility::default(),
-        DespawnOnExit(Screen::Gameplay),
-        children![
-            player(400.0, &player_assets, &mut texture_atlas_layouts),
+    let level = levels.get(&level_assets.level).unwrap();
+    let level_id = commands
+        .spawn((
+            Name::new("Level"),
+            Transform::from_translation(level.center_position().extend(0.0)),
+            // .with_scale(Vec2::splat(16.0).extend(1.0)),
+            Visibility::default(),
+            DespawnOnExit(Screen::Gameplay),
+            children![
+                player(400.0, &player_assets, &mut texture_atlas_layouts),
+                (
+                    Name::new("Gameplay Music"),
+                    music(level_assets.music.clone())
+                )
+            ],
+        ))
+        .id();
+
+    let terrain_colliders: Vec<_> = level
+        .terrain_colliders
+        .iter()
+        .map(|tc| {
+            info!("Collider: {tc:?}");
+            let (collider, transform) = tc.into_collider_and_transform(16.0);
             (
-                Name::new("Gameplay Music"),
-                music(level_assets.music.clone())
+                Name::new("Terrain Collider"),
+                ChildOf(level_id),
+                collider,
+                transform,
+                DebugRender::default(),
             )
-        ],
-    ));
+        })
+        .collect();
+
+    commands.spawn_batch(terrain_colliders);
 }

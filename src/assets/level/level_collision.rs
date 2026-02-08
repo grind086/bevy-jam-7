@@ -14,12 +14,13 @@ use serde::{Deserialize, Serialize};
 pub struct LevelCollider(pub URect);
 
 impl LevelCollider {
-    /// Creates a collider and transform for this collider. These should be added as children of
-    /// the collider.
-    pub fn into_collider(self) -> (Collider, Transform) {
+    /// Creates a [`Collider`] and [`Transform`] for this collider in the level's local space.
+    ///
+    /// These should be added as children of the level entity.
+    pub fn into_collider_and_transform(self, scale: f32) -> (Collider, Transform) {
         let rect = self.as_rect();
-        let size = rect.size();
-        let center = rect.center();
+        let size = rect.size() * scale;
+        let center = rect.center() * scale;
         (
             Collider::rectangle(size.x, size.y),
             Transform::from_translation(center.extend(0.0)),
@@ -34,6 +35,7 @@ pub struct LevelCollisionBuilder {
     collision_grid: Vec<bool>,
 }
 
+#[allow(unused)]
 impl LevelCollisionBuilder {
     fn new(level_bounds: IRect, default: bool) -> Self {
         let level_size = level_bounds.size();
@@ -44,8 +46,20 @@ impl LevelCollisionBuilder {
         }
     }
 
-    pub fn from_grid(size: UVec2, collision_grid: Vec<bool>) -> Self {
+    pub fn from_grid(size: UVec2, mut collision_grid: Vec<bool>, flip_y: bool) -> Self {
         assert_eq!(size.element_product() as usize, collision_grid.len());
+
+        if flip_y {
+            for y in 0..size.y / 2 {
+                let i = y * size.x;
+                let u = (size.y - y) * size.x - size.x;
+                let ptr = collision_grid.as_mut_ptr();
+                unsafe {
+                    core::ptr::swap_nonoverlapping(ptr.add(i as _), ptr.add(u as _), size.x as _)
+                };
+            }
+        }
+
         let size = size.as_ivec2();
         Self {
             bounds: IRect {
@@ -110,7 +124,7 @@ impl LevelCollisionBuilder {
                     (None, true) => strip_start = Some(x),
                     (Some(left), false) => {
                         strip_start = None;
-                        row_strips.push((left, x - 1));
+                        row_strips.push((left, x));
                     }
                     _ => {}
                 }
@@ -154,7 +168,7 @@ impl LevelCollisionBuilder {
         self.build_rects(|rect| {
             colliders.push(LevelCollider(URect {
                 min: (rect.min - self.bounds.min).as_uvec2(),
-                max: (rect.max - self.bounds.max).as_uvec2(),
+                max: (rect.max - self.bounds.min).as_uvec2(),
             }));
         });
 

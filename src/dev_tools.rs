@@ -1,5 +1,6 @@
 //! Development tools for the game. This plugin is only enabled in dev builds.
 
+use avian2d::prelude::PhysicsDebugPlugin;
 use bevy::{
     dev_tools::states::log_transitions,
     input::common_conditions::{input_just_pressed, input_toggle_active},
@@ -18,6 +19,9 @@ pub(super) fn plugin(app: &mut App) {
         EguiPlugin::default(),
         WorldInspectorPlugin::default().run_if(input_toggle_active(true, INSPECTOR_TOGGLE_KEY)),
     ));
+
+    // Physics
+    app.add_plugins(PhysicsDebugPlugin);
 
     // Log `Screen` state transitions.
     app.add_systems(Update, log_transitions::<Screen>);
