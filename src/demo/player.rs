@@ -8,10 +8,7 @@ use bevy::{
 use crate::{
     AppSystems, PausableSystems,
     asset_tracking::LoadResource,
-    demo::{
-        animation::PlayerAnimation,
-        movement::{MovementController, ScreenWrap},
-    },
+    demo::{animation::PlayerAnimation, movement::MovementController},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -61,7 +58,6 @@ pub fn player(
             max_speed,
             ..default()
         },
-        ScreenWrap,
         player_animation,
     )
 }
