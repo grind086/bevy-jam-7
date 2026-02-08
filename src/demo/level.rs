@@ -68,7 +68,6 @@ pub fn spawn_level(
         .terrain_colliders
         .iter()
         .map(|tc| {
-            info!("Collider: {tc:?}");
             let (collider, transform) = tc.into_collider_and_transform(16.0);
             (
                 Name::new("Terrain Collider"),
