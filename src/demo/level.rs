@@ -34,6 +34,9 @@ impl FromWorld for LevelAssets {
     }
 }
 
+#[derive(Component, Reflect, Deref)]
+pub struct CurrentLevel(Handle<Level>);
+
 /// A system that spawns the main level.
 pub fn spawn_level(
     mut commands: Commands,
@@ -46,6 +49,7 @@ pub fn spawn_level(
     let level_id = commands
         .spawn((
             Name::new("Level"),
+            CurrentLevel(level_assets.level.clone()),
             Transform::from_translation(level.center_position().extend(0.0)),
             // .with_scale(Vec2::splat(16.0).extend(1.0)),
             Visibility::default(),

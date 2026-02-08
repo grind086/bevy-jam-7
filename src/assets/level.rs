@@ -82,3 +82,79 @@ impl AssetLoader for LevelLoader {
         &["ldtkl"]
     }
 }
+
+#[cfg(feature = "dev_native")]
+pub(super) mod hot_reload {
+    use avian2d::prelude::{Collider, DebugRender};
+    use bevy::{asset::AssetEventSystems, prelude::*};
+
+    use crate::{assets::level::Level, demo::level::CurrentLevel};
+
+    pub fn plugin(app: &mut App) {
+        app.add_systems(
+            PostUpdate,
+            reload_level
+                .after(AssetEventSystems)
+                .run_if(on_message::<AssetEvent<Level>>),
+        );
+    }
+
+    fn reload_level(
+        mut asset_events: MessageReader<AssetEvent<Level>>,
+        levels: Res<Assets<Level>>,
+        current_level: Single<(Entity, &CurrentLevel, &Children, &mut Transform)>,
+        named_colliders: Query<&Name, With<Collider>>,
+        mut commands: Commands,
+    ) {
+        let (level_id, level_handle, level_children, mut level_transform) =
+            current_level.into_inner();
+        for ev in asset_events.read() {
+            match ev {
+                &AssetEvent::Modified { id } if id == level_handle.id() => {
+                    let level = levels.get(id).unwrap();
+
+                    // Update level position
+                    level_transform.translation = level.center_position().extend(0.0);
+
+                    // Despawn existing terrain colliders
+                    let despawn_batch: Vec<_> = level_children
+                        .iter()
+                        .filter_map(|entity| {
+                            named_colliders
+                                .get(entity)
+                                .ok()
+                                .filter(|name| name.as_str() == "Terrain Collider")
+                                .map(|_| entity)
+                        })
+                        .collect();
+
+                    commands.queue(move |world: &mut World| {
+                        despawn_batch.into_iter().for_each(|entity| {
+                            world.despawn(entity);
+                        })
+                    });
+
+                    // Spawn new terrain colliders
+                    let terrain_colliders: Vec<_> = level
+                        .terrain_colliders
+                        .iter()
+                        .map(|tc| {
+                            info!("Collider: {tc:?}");
+                            let (collider, transform) = tc.into_collider_and_transform(16.0);
+                            (
+                                Name::new("Terrain Collider"),
+                                ChildOf(level_id),
+                                collider,
+                                transform,
+                                DebugRender::default(),
+                            )
+                        })
+                        .collect();
+
+                    commands.spawn_batch(terrain_colliders);
+                }
+                _ => {}
+            }
+        }
+    }
+}
