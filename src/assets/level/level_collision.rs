@@ -100,8 +100,7 @@ impl LevelCollisionBuilder {
     /// Returns the collision at the given grid coordinate. Coordinates outside the grid return
     /// `false`.
     pub fn get(&self, grid: IVec2) -> bool {
-        self.linearize(grid)
-            .map_or(false, |i| self.collision_grid[i])
+        self.linearize(grid).is_some_and(|i| self.collision_grid[i])
     }
 
     /// Builds a reduced set of rectangles from the current tile collision grid, calling

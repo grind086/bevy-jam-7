@@ -1,7 +1,12 @@
 //! LDtk QuickTypes
 //!
 //! From: https://ldtk.io/files/quicktype/LdtkJson.rs
-#![allow(unused, reason = "copied from third party repo")]
+#![allow(
+    unused,
+    clippy::all,
+    rustdoc::all,
+    reason = "copied from third party repo"
+)]
 
 // Example code that deserializes and serializes the model.
 // extern crate serde;
