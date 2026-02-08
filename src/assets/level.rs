@@ -49,6 +49,7 @@ impl AssetLoader for LevelLoader {
         reader.read_to_end(&mut bytes).await?;
 
         let ldtk: LdtkLevel = serde_json::from_slice(&bytes)?;
+        let level_offset = IVec2::new(ldtk.world_x as _, -ldtk.world_y as _);
 
         let terrain_layer = ldtk
             .layer_instances
@@ -59,7 +60,7 @@ impl AssetLoader for LevelLoader {
             .unwrap();
 
         let grid_size = UVec2::new(terrain_layer.c_wid as _, terrain_layer.c_hei as _);
-        let grid_offset = IVec2::new(
+        let _grid_offset = IVec2::new(
             terrain_layer.px_total_offset_x as _,
             terrain_layer.px_total_offset_y as _,
         ) / terrain_layer.grid_size as i32;
@@ -73,7 +74,7 @@ impl AssetLoader for LevelLoader {
 
         Ok(Level {
             grid_size,
-            grid_offset,
+            grid_offset: level_offset,
             terrain_colliders,
         })
     }
