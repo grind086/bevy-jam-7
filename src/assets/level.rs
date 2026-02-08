@@ -13,6 +13,7 @@ mod level_collision;
 
 #[derive(Asset, Reflect, Serialize, Deserialize)]
 pub struct Level {
+    pub name: String,
     pub grid_size: UVec2,
     pub grid_offset: IVec2,
     pub terrain_colliders: Vec<LevelCollider>,
@@ -73,6 +74,7 @@ impl AssetLoader for LevelLoader {
         .build();
 
         Ok(Level {
+            name: ldtk.identifier,
             grid_size,
             grid_offset: level_offset,
             terrain_colliders,
@@ -113,6 +115,7 @@ pub(super) mod hot_reload {
             match ev {
                 &AssetEvent::Modified { id } if id == level_handle.id() => {
                     let level = levels.get(id).unwrap();
+                    info!("Reloading level {:?}", level.name);
 
                     // Update level position
                     level_transform.translation = level.center_position().extend(0.0);
