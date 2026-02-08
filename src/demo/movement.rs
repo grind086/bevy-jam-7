@@ -37,7 +37,7 @@ pub struct MovementController {
     pub intent: Vec2,
 
     /// Maximum speed in world units per second.
-    /// 1 world unit = 1 pixel when using the default 2D camera and no physics engine.
+    /// 1 world unit = 1 meter.
     pub max_speed: f32,
 }
 
@@ -46,7 +46,7 @@ impl Default for MovementController {
         Self {
             intent: Vec2::ZERO,
             // 400 pixels per second is a nice default, but we can still vary this per character.
-            max_speed: 400.0,
+            max_speed: 45.0,
         }
     }
 }
@@ -67,9 +67,14 @@ pub struct ScreenWrap;
 
 fn apply_screen_wrap(
     window: Single<&Window, With<PrimaryWindow>>,
+    camera: Single<&Projection, With<Camera2d>>,
     mut wrap_query: Query<&mut Transform, With<ScreenWrap>>,
 ) {
-    let size = window.size() + 256.0;
+    let Projection::Orthographic(proj) = camera.into_inner() else {
+        return;
+    };
+
+    let size = (window.size() + 256.0) * proj.scale;
     let half_size = size / 2.0;
     for mut transform in &mut wrap_query {
         let position = transform.translation.xy();

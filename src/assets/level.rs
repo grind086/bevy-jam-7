@@ -143,7 +143,7 @@ pub(super) mod hot_reload {
                         .terrain_colliders
                         .iter()
                         .map(|tc| {
-                            let (collider, transform) = tc.into_collider_and_transform(16.0);
+                            let (collider, transform) = tc.into_collider_and_transform(1.0);
                             (
                                 Name::new("Terrain Collider"),
                                 ChildOf(level_id),

@@ -55,7 +55,7 @@ pub fn spawn_level(
             Visibility::default(),
             DespawnOnExit(Screen::Gameplay),
             children![
-                player(400.0, &player_assets, &mut texture_atlas_layouts),
+                player(45.0, &player_assets, &mut texture_atlas_layouts),
                 (
                     Name::new("Gameplay Music"),
                     music(level_assets.music.clone())
@@ -68,7 +68,7 @@ pub fn spawn_level(
         .terrain_colliders
         .iter()
         .map(|tc| {
-            let (collider, transform) = tc.into_collider_and_transform(16.0);
+            let (collider, transform) = tc.into_collider_and_transform(1.0);
             (
                 Name::new("Terrain Collider"),
                 ChildOf(level_id),

@@ -46,7 +46,7 @@ impl Plugin for AppPlugin {
         );
 
         // Physics
-        app.add_plugins(PhysicsPlugins::default().with_length_unit(16.0));
+        app.add_plugins(PhysicsPlugins::default());
 
         // Add other plugins.
         app.add_plugins((
@@ -103,5 +103,12 @@ struct Pause(pub bool);
 struct PausableSystems;
 
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn((Name::new("Camera"), Camera2d));
+    commands.spawn((
+        Name::new("Camera"),
+        Camera2d,
+        Projection::Orthographic(OrthographicProjection {
+            scale: 1. / 16.,
+            ..OrthographicProjection::default_2d()
+        }),
+    ));
 }
