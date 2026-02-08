@@ -24,6 +24,12 @@ pub(super) fn plugin(app: &mut App) {
             .in_set(AppSystems::RecordInput)
             .in_set(PausableSystems),
     );
+
+    // Update camera position
+    app.add_systems(
+        PostUpdate,
+        update_player_camera_position.before(TransformSystems::Propagate),
+    );
 }
 
 /// The player character.
@@ -64,6 +70,10 @@ pub fn player(
 #[reflect(Component)]
 struct Player;
 
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
+pub struct PlayerCamera;
+
 fn record_player_directional_input(
     input: Res<ButtonInput<KeyCode>>,
     mut controller_query: Query<&mut MovementController, With<Player>>,
@@ -91,6 +101,13 @@ fn record_player_directional_input(
     for mut controller in &mut controller_query {
         controller.intent = intent;
     }
+}
+
+fn update_player_camera_position(
+    player: Single<&GlobalTransform, (With<Player>, Without<PlayerCamera>)>,
+    mut camera: Single<&mut Transform, (With<PlayerCamera>, Without<Player>)>,
+) {
+    camera.translation = player.translation();
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]

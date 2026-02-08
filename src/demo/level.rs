@@ -51,7 +51,6 @@ pub fn spawn_level(
             Name::new("Level"),
             CurrentLevel(level_assets.level.clone()),
             Transform::from_translation(level.center_position().extend(0.0)),
-            // .with_scale(Vec2::splat(16.0).extend(1.0)),
             Visibility::default(),
             DespawnOnExit(Screen::Gameplay),
             children![

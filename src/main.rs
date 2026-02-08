@@ -16,6 +16,8 @@ mod theme;
 use avian2d::PhysicsPlugins;
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
+use crate::demo::player::PlayerCamera;
+
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
 }
@@ -106,6 +108,7 @@ fn spawn_camera(mut commands: Commands) {
     commands.spawn((
         Name::new("Camera"),
         Camera2d,
+        PlayerCamera,
         Projection::Orthographic(OrthographicProjection {
             scale: 1. / 16.,
             ..OrthographicProjection::default_2d()
