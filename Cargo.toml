@@ -5,6 +5,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+avian2d = { version = "0.6.0-rc.1" }
 bevy = { version = "0.18" }
 rand = "0.9"
 # Compile out low-severity logs to improve performance.
