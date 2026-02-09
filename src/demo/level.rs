@@ -54,7 +54,12 @@ pub fn spawn_level(
             Visibility::default(),
             DespawnOnExit(Screen::Gameplay),
             children![
-                player(45.0, &player_assets, &mut texture_atlas_layouts),
+                player(
+                    level.player_spawn.as_vec2(),
+                    45.0,
+                    &player_assets,
+                    &mut texture_atlas_layouts
+                ),
                 (
                     Name::new("Gameplay Music"),
                     music(level_assets.music.clone())

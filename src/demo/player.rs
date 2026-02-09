@@ -31,6 +31,7 @@ pub(super) fn plugin(app: &mut App) {
 
 /// The player character.
 pub fn player(
+    position: Vec2,
     max_speed: f32,
     player_assets: &PlayerAssets,
     texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
@@ -53,7 +54,7 @@ pub fn player(
             custom_size: Some(Vec2::splat(2.)),
             ..default()
         },
-        Transform::default(),
+        Transform::from_translation(position.extend(0.0)),
         MovementController {
             max_speed,
             ..default()

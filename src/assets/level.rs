@@ -16,6 +16,7 @@ pub struct Level {
     pub name: String,
     pub grid_size: UVec2,
     pub grid_offset: IVec2,
+    pub player_spawn: IVec2,
     pub terrain_colliders: Vec<LevelCollider>,
 }
 
@@ -52,6 +53,25 @@ impl AssetLoader for LevelLoader {
         let ldtk: LdtkLevel = serde_json::from_slice(&bytes)?;
         let level_offset = IVec2::new(ldtk.world_x as _, -ldtk.world_y as _);
 
+        let entities_layer = ldtk
+            .layer_instances
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find(|layer| layer.identifier == "Entities")
+            .unwrap();
+
+        let player_spawn_entity = entities_layer
+            .entity_instances
+            .iter()
+            .find(|entity| entity.identifier == "Player_Spawn")
+            .unwrap();
+
+        let player_spawn = IVec2::new(
+            player_spawn_entity.grid[0] as _,
+            (entities_layer.c_hei - player_spawn_entity.grid[1] - 1) as _,
+        );
+
         let terrain_layer = ldtk
             .layer_instances
             .as_ref()
@@ -77,6 +97,7 @@ impl AssetLoader for LevelLoader {
             name: ldtk.identifier,
             grid_size,
             grid_offset: level_offset,
+            player_spawn,
             terrain_colliders,
         })
     }
