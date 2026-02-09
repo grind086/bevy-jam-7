@@ -109,7 +109,7 @@ impl AssetLoader for LevelLoader {
 
 #[cfg(feature = "dev_native")]
 pub(super) mod hot_reload {
-    use avian2d::prelude::{Collider, DebugRender};
+    use avian2d::prelude::{Collider, RigidBody};
     use bevy::{asset::AssetEventSystems, prelude::*};
 
     use crate::{assets::level::Level, demo::level::CurrentLevel};
@@ -168,9 +168,9 @@ pub(super) mod hot_reload {
                             (
                                 Name::new("Terrain Collider"),
                                 ChildOf(level_id),
+                                RigidBody::Static,
                                 collider,
                                 transform,
-                                DebugRender::default(),
                             )
                         })
                         .collect();

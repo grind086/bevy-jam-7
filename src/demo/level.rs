@@ -1,6 +1,6 @@
 //! Spawn the main level.
 
-use avian2d::prelude::DebugRender;
+use avian2d::prelude::RigidBody;
 use bevy::prelude::*;
 
 use crate::{
@@ -76,9 +76,9 @@ pub fn spawn_level(
             (
                 Name::new("Terrain Collider"),
                 ChildOf(level_id),
+                RigidBody::Static,
                 collider,
                 transform,
-                DebugRender::default(),
             )
         })
         .collect();

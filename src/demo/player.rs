@@ -1,5 +1,6 @@
 //! Player-specific behavior.
 
+use avian2d::prelude::{Collider, RigidBody};
 use bevy::{
     image::{ImageLoaderSettings, ImageSampler},
     prelude::*,
@@ -54,6 +55,8 @@ pub fn player(
             custom_size: Some(Vec2::splat(2.)),
             ..default()
         },
+        Collider::rectangle(2.0, 2.0),
+        RigidBody::Dynamic,
         Transform::from_translation(position.extend(0.0)),
         MovementController {
             max_speed,

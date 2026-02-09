@@ -1,6 +1,6 @@
 //! Development tools for the game. This plugin is only enabled in dev builds.
 
-use avian2d::prelude::PhysicsDebugPlugin;
+use avian2d::prelude::{PhysicsDebugPlugin, PhysicsGizmos};
 use bevy::{
     dev_tools::states::log_transitions,
     input::common_conditions::{input_just_pressed, input_toggle_active},
@@ -21,7 +21,13 @@ pub(super) fn plugin(app: &mut App) {
     ));
 
     // Physics
-    app.add_plugins(PhysicsDebugPlugin);
+    app.add_plugins(PhysicsDebugPlugin).insert_gizmo_config(
+        PhysicsGizmos {
+            axis_lengths: None,
+            ..default()
+        },
+        GizmoConfig::default(),
+    );
 
     // Log `Screen` state transitions.
     app.add_systems(Update, log_transitions::<Screen>);
