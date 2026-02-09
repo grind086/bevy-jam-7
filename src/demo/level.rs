@@ -8,6 +8,7 @@ use crate::{
     assets::level::Level,
     audio::music,
     demo::player::{PlayerAssets, player},
+    physics::LorentzFactor,
     screens::Screen,
 };
 
@@ -56,7 +57,7 @@ pub fn spawn_level(
             children![
                 player(
                     level.player_spawn.as_vec2(),
-                    45.0,
+                    8.0,
                     &player_assets,
                     &mut texture_atlas_layouts
                 ),
@@ -77,6 +78,7 @@ pub fn spawn_level(
                 Name::new("Terrain Collider"),
                 ChildOf(level_id),
                 RigidBody::Static,
+                LorentzFactor::default(),
                 collider,
                 transform,
             )

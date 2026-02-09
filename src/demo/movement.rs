@@ -13,14 +13,7 @@
 //! purposes. If you want to move the player in a smoother way,
 //! consider using a [fixed timestep](https://github.com/bevyengine/bevy/blob/main/examples/movement/physics_in_fixed_timestep.rs).
 
-use avian2d::prelude::{Forces, WriteRigidBodyForces};
 use bevy::prelude::*;
-
-use crate::PausableSystems;
-
-pub(super) fn plugin(app: &mut App) {
-    app.add_systems(FixedUpdate, apply_movement.in_set(PausableSystems));
-}
 
 /// These are the movement parameters for our character controller.
 /// For now, this is only used for a single player, but it could power NPCs or
@@ -43,12 +36,5 @@ impl Default for MovementController {
             // 400 pixels per second is a nice default, but we can still vary this per character.
             max_speed: 45.0,
         }
-    }
-}
-
-fn apply_movement(mut movement_query: Query<(&MovementController, Forces)>) {
-    for (controller, mut forces) in &mut movement_query {
-        let velocity = controller.max_speed * controller.intent;
-        forces.apply_local_linear_impulse(velocity);
     }
 }

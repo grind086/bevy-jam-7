@@ -10,10 +10,10 @@ mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
 mod menus;
+mod physics;
 mod screens;
 mod theme;
 
-use avian2d::PhysicsPlugins;
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
 use crate::demo::player::PlayerCamera;
@@ -47,14 +47,12 @@ impl Plugin for AppPlugin {
                 }),
         );
 
-        // Physics
-        app.add_plugins(PhysicsPlugins::default());
-
         // Add other plugins.
         app.add_plugins((
-            asset_tracking::plugin,
             assets::plugin,
+            asset_tracking::plugin,
             audio::plugin,
+            physics::plugin,
             demo::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
