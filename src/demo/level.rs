@@ -38,6 +38,9 @@ impl FromWorld for LevelAssets {
 #[derive(Component, Reflect, Deref)]
 pub struct CurrentLevel(Handle<Level>);
 
+#[derive(Component, Reflect)]
+pub struct LevelGeometry;
+
 /// A system that spawns the main level.
 pub fn spawn_level(
     mut commands: Commands,
@@ -57,15 +60,25 @@ pub fn spawn_level(
             children![
                 player(
                     level.player_spawn.as_vec2(),
-                    8.0,
+                    1.0,
                     &player_assets,
                     &mut texture_atlas_layouts
                 ),
                 (
                     Name::new("Gameplay Music"),
                     music(level_assets.music.clone())
-                )
+                ),
             ],
+        ))
+        .id();
+
+    let level_geometry_id = commands
+        .spawn((
+            Name::new("Level Geometry"),
+            LevelGeometry,
+            LorentzFactor::default(),
+            ChildOf(level_id),
+            RigidBody::Static,
         ))
         .id();
 
@@ -76,9 +89,8 @@ pub fn spawn_level(
             let (collider, transform) = tc.into_collider_and_transform(1.0);
             (
                 Name::new("Terrain Collider"),
-                ChildOf(level_id),
+                ChildOf(level_geometry_id),
                 RigidBody::Static,
-                LorentzFactor::default(),
                 collider,
                 transform,
             )

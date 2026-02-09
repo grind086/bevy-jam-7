@@ -109,10 +109,13 @@ impl AssetLoader for LevelLoader {
 
 #[cfg(feature = "dev_native")]
 pub(super) mod hot_reload {
-    use avian2d::prelude::{Collider, RigidBody};
+    use avian2d::prelude::RigidBody;
     use bevy::{asset::AssetEventSystems, prelude::*};
 
-    use crate::{assets::level::Level, demo::level::CurrentLevel};
+    use crate::{
+        assets::level::Level,
+        demo::level::{CurrentLevel, LevelGeometry},
+    };
 
     pub fn plugin(app: &mut App) {
         app.add_systems(
@@ -126,12 +129,12 @@ pub(super) mod hot_reload {
     fn reload_level(
         mut asset_events: MessageReader<AssetEvent<Level>>,
         levels: Res<Assets<Level>>,
-        current_level: Single<(Entity, &CurrentLevel, &Children, &mut Transform)>,
-        named_colliders: Query<&Name, With<Collider>>,
+        current_level: Single<(&CurrentLevel, &mut Transform)>,
+        level_geometry: Single<(Entity, &Children), With<LevelGeometry>>,
         mut commands: Commands,
     ) {
-        let (level_id, level_handle, level_children, mut level_transform) =
-            current_level.into_inner();
+        let (level_handle, mut level_transform) = current_level.into_inner();
+
         for ev in asset_events.read() {
             match ev {
                 &AssetEvent::Modified { id } if id == level_handle.id() => {
@@ -142,16 +145,7 @@ pub(super) mod hot_reload {
                     level_transform.translation = level.center_position().extend(0.0);
 
                     // Despawn existing terrain colliders
-                    let despawn_batch: Vec<_> = level_children
-                        .iter()
-                        .filter_map(|entity| {
-                            named_colliders
-                                .get(entity)
-                                .ok()
-                                .filter(|name| name.as_str() == "Terrain Collider")
-                                .map(|_| entity)
-                        })
-                        .collect();
+                    let despawn_batch: Vec<_> = level_geometry.1.iter().collect();
 
                     commands.queue(move |world: &mut World| {
                         despawn_batch.into_iter().for_each(|entity| {
@@ -167,7 +161,7 @@ pub(super) mod hot_reload {
                             let (collider, transform) = tc.into_collider_and_transform(1.0);
                             (
                                 Name::new("Terrain Collider"),
-                                ChildOf(level_id),
+                                ChildOf(level_geometry.0),
                                 RigidBody::Static,
                                 collider,
                                 transform,
