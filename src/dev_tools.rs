@@ -6,9 +6,12 @@ use bevy::{
     input::common_conditions::{input_just_pressed, input_toggle_active},
     prelude::*,
 };
-use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
+use bevy_inspector_egui::{
+    bevy_egui::EguiPlugin,
+    quick::{ResourceInspectorPlugin, WorldInspectorPlugin},
+};
 
-use crate::screens::Screen;
+use crate::{physics::SpeedOfLight, screens::Screen};
 
 const INSPECTOR_TOGGLE_KEY: KeyCode = KeyCode::Backquote;
 const UI_DEBUG_TOGGLE_KEY: KeyCode = KeyCode::F1;
@@ -18,6 +21,8 @@ pub(super) fn plugin(app: &mut App) {
     app.add_plugins((
         EguiPlugin::default(),
         WorldInspectorPlugin::default().run_if(input_toggle_active(true, INSPECTOR_TOGGLE_KEY)),
+        ResourceInspectorPlugin::<SpeedOfLight>::new()
+            .run_if(input_toggle_active(true, INSPECTOR_TOGGLE_KEY)),
     ));
 
     // Physics
