@@ -1,7 +1,10 @@
 use avian2d::{
     PhysicsPlugins,
     physics_transform::PhysicsTransformSystems,
-    prelude::{Forces, LinearVelocity, PhysicsDebugPlugin, PhysicsGizmos, PhysicsSystems, WriteRigidBodyForces},
+    prelude::{
+        Forces, LinearVelocity, PhysicsDebugPlugin, PhysicsGizmos, PhysicsSystems,
+        WriteRigidBodyForces,
+    },
 };
 use bevy::{camera::ScalingMode, prelude::*, window::PrimaryWindow};
 
