@@ -13,10 +13,7 @@ mod menus;
 mod screens;
 mod theme;
 
-use avian2d::{
-    PhysicsPlugins,
-    prelude::{PhysicsDebugPlugin, PhysicsGizmos},
-};
+use avian2d::PhysicsPlugins;
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
 use crate::demo::player::PlayerCamera;
@@ -52,13 +49,6 @@ impl Plugin for AppPlugin {
 
         // Physics
         app.add_plugins(PhysicsPlugins::default());
-        app.add_plugins(PhysicsDebugPlugin).insert_gizmo_config(
-            PhysicsGizmos {
-                axis_lengths: None,
-                ..default()
-            },
-            GizmoConfig::default(),
-        );
 
         // Add other plugins.
         app.add_plugins((
