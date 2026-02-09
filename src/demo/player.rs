@@ -55,7 +55,7 @@ pub fn player(
             custom_size: Some(Vec2::new(1.0, 1.8)),
             ..default()
         },
-        Collider::capsule(0.5, 0.8),
+        Collider::capsule(0.45, 0.9),
         RigidBody::Dynamic,
         LockedAxes::ROTATION_LOCKED,
         Transform::from_translation(position.extend(0.0)),
