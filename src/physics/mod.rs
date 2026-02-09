@@ -51,21 +51,21 @@ impl LorentzFactor {
         }
     }
 
-    pub fn is_finite(&self) -> bool {
-        self.scalar.is_finite()
-    }
+    // pub fn is_finite(&self) -> bool {
+    //     self.scalar.is_finite()
+    // }
 
-    pub fn is_unit(&self) -> bool {
-        self.scalar == 1.0
-    }
+    // pub fn is_unit(&self) -> bool {
+    //     self.scalar == 1.0
+    // }
 
-    pub fn scalar(&self) -> f32 {
-        self.scalar
-    }
+    // pub fn scalar(&self) -> f32 {
+    //     self.scalar
+    // }
 
-    pub fn vector(&self) -> Vec2 {
-        self.vector
-    }
+    // pub fn vector(&self) -> Vec2 {
+    //     self.vector
+    // }
 }
 
 impl Default for LorentzFactor {
