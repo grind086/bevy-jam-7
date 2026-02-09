@@ -1,6 +1,6 @@
 //! Player-specific behavior.
 
-use avian2d::prelude::{Collider, RigidBody};
+use avian2d::prelude::{Collider, LockedAxes, RigidBody};
 use bevy::{
     image::{ImageLoaderSettings, ImageSampler},
     prelude::*,
@@ -52,11 +52,12 @@ pub fn player(
                 layout: texture_atlas_layout,
                 index: player_animation.get_atlas_index(),
             }),
-            custom_size: Some(Vec2::new(1.0, 2.0)),
+            custom_size: Some(Vec2::new(1.0, 1.8)),
             ..default()
         },
-        Collider::capsule(0.5, 1.0),
+        Collider::capsule(0.5, 0.8),
         RigidBody::Dynamic,
+        LockedAxes::ROTATION_LOCKED,
         Transform::from_translation(position.extend(0.0)),
         MovementController {
             max_speed,
