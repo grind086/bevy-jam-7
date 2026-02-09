@@ -52,10 +52,10 @@ pub fn player(
                 layout: texture_atlas_layout,
                 index: player_animation.get_atlas_index(),
             }),
-            custom_size: Some(Vec2::splat(2.)),
+            custom_size: Some(Vec2::new(1.0, 2.0)),
             ..default()
         },
-        Collider::rectangle(2.0, 2.0),
+        Collider::capsule(0.5, 1.0),
         RigidBody::Dynamic,
         Transform::from_translation(position.extend(0.0)),
         MovementController {
