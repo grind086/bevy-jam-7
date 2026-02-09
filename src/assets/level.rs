@@ -1,22 +1,31 @@
 use bevy::{
     asset::{AssetLoader, LoadContext, io::Reader},
+    platform::collections::HashMap,
     prelude::*,
+    sprite_render::TileData,
 };
-use serde::{Deserialize, Serialize};
 
 use crate::assets::{
-    level::level_collision::{LevelCollider, LevelCollisionBuilder},
-    serialize::ldtk::Level as LdtkLevel,
+    level::{
+        level_collision::{LevelCollider, LevelCollisionBuilder},
+        tileset_image::TilesetImageBuilder,
+    },
+    serialize::ldtk::{
+        EntityInstance as LdtkEntity, LayerInstance as LdtkLayer, Level as LdtkLevel,
+    },
 };
 
 mod level_collision;
+mod tileset_image;
 
-#[derive(Asset, Reflect, Serialize, Deserialize)]
+#[derive(Asset, Reflect)]
 pub struct Level {
     pub name: String,
     pub grid_size: UVec2,
     pub grid_offset: IVec2,
     pub player_spawn: IVec2,
+    pub terrain_tileset: Handle<Image>,
+    pub terrain_tiledata: Vec<TileData>,
     pub terrain_colliders: Vec<LevelCollider>,
 }
 
@@ -45,7 +54,7 @@ impl AssetLoader for LevelLoader {
         &self,
         reader: &mut dyn Reader,
         &(): &Self::Settings,
-        _: &mut LoadContext<'_>,
+        load_context: &mut LoadContext<'_>,
     ) -> Result<Self::Asset, Self::Error> {
         let mut bytes = Vec::new();
         reader.read_to_end(&mut bytes).await?;
@@ -53,32 +62,15 @@ impl AssetLoader for LevelLoader {
         let ldtk: LdtkLevel = serde_json::from_slice(&bytes)?;
         let level_offset = IVec2::new(ldtk.world_x as _, -ldtk.world_y as _);
 
-        let entities_layer = ldtk
-            .layer_instances
-            .as_ref()
-            .unwrap()
-            .iter()
-            .find(|layer| layer.identifier == "Entities")
-            .unwrap();
+        let entities_layer = get_named_layer(&ldtk, "Entities").unwrap();
 
-        let player_spawn_entity = entities_layer
-            .entity_instances
-            .iter()
-            .find(|entity| entity.identifier == "Player_Spawn")
-            .unwrap();
-
+        let player_spawn_entity = get_named_entity(entities_layer, "Player_Spawn").unwrap();
         let player_spawn = IVec2::new(
             player_spawn_entity.grid[0] as _,
             (entities_layer.c_hei - player_spawn_entity.grid[1] - 1) as _,
         );
 
-        let terrain_layer = ldtk
-            .layer_instances
-            .as_ref()
-            .unwrap()
-            .iter()
-            .find(|layer| layer.identifier == "Terrain")
-            .unwrap();
+        let terrain_layer = get_named_layer(&ldtk, "Terrain").unwrap();
 
         let grid_size = UVec2::new(terrain_layer.c_wid as _, terrain_layer.c_hei as _);
         let _grid_offset = IVec2::new(
@@ -93,11 +85,19 @@ impl AssetLoader for LevelLoader {
         )
         .build();
 
+        let terrain_tiles_layer = get_named_layer(&ldtk, "TerrainTiles").unwrap();
+        let (terrain_tileset, terrain_tiledata) =
+            build_tilemap_from_layer(load_context, terrain_tiles_layer)
+                .await
+                .unwrap();
+
         Ok(Level {
             name: ldtk.identifier,
             grid_size,
             grid_offset: level_offset,
             player_spawn,
+            terrain_tileset,
+            terrain_tiledata,
             terrain_colliders,
         })
     }
@@ -105,6 +105,85 @@ impl AssetLoader for LevelLoader {
     fn extensions(&self) -> &[&str] {
         &["ldtkl"]
     }
+}
+
+fn get_named_layer<'a>(level: &'a LdtkLevel, name: &str) -> Option<&'a LdtkLayer> {
+    level
+        .layer_instances
+        .as_ref()?
+        .iter()
+        .find(|layer| layer.identifier == name)
+}
+
+fn get_named_entity<'a>(layer: &'a LdtkLayer, name: &str) -> Option<&'a LdtkEntity> {
+    layer
+        .entity_instances
+        .iter()
+        .find(|entity| entity.identifier == name)
+}
+
+async fn build_tilemap_from_layer(
+    load_context: &mut LoadContext<'_>,
+    layer: &LdtkLayer,
+) -> Option<(Handle<Image>, Vec<TileData>)> {
+    let tileset_path = layer.tileset_rel_path.as_ref()?;
+    let tileset_image = load_context
+        .loader()
+        .immediate()
+        .load::<Image>(tileset_path)
+        .await
+        .ok()?;
+
+    let tiles = if layer.grid_tiles.is_empty() {
+        if layer.auto_layer_tiles.is_empty() {
+            // No tiles to build a tilemap from
+            return None;
+        }
+        &layer.auto_layer_tiles
+    } else {
+        &layer.grid_tiles
+    };
+
+    let tile_size = layer.grid_size;
+
+    let mut tile_id_map = HashMap::new();
+    let mut tileset_builder = TilesetImageBuilder::new(
+        UVec2::splat(tile_size as _),
+        tileset_image.get().texture_descriptor.format,
+    )
+    .unwrap();
+
+    for tile in tiles {
+        let key = UVec2::new(tile.src[0] as _, tile.src[1] as _);
+        tile_id_map
+            .entry(key)
+            .or_insert_with(|| tileset_builder.add_tile(tileset_image.get(), key).unwrap());
+    }
+
+    let mut tile_data: Vec<_> = tiles
+        .iter()
+        .map(|tile| {
+            TileData::from_tileset_index(
+                tile_id_map[&UVec2::new(tile.src[0] as _, tile.src[1] as _)],
+            )
+        })
+        .collect();
+
+    // Y-flip tilemap
+    let w = layer.c_wid as usize;
+    let h = layer.c_hei as usize;
+    for r in 0..h / 2 {
+        let ptr = tile_data.as_mut_ptr();
+        // SAFETY: Trust me bro. It'll be fine bro.
+        unsafe { core::ptr::swap_nonoverlapping(ptr.add(r * w), ptr.add((h - r - 1) * w), w) };
+    }
+
+    let tileset_image = load_context.add_labeled_asset(
+        format!("{}_tiles", layer.identifier),
+        tileset_builder.build(),
+    );
+
+    Some((tileset_image, tile_data))
 }
 
 #[cfg(feature = "dev_native")]
