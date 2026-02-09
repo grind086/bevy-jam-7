@@ -1,10 +1,7 @@
 use avian2d::{
     PhysicsPlugins,
     physics_transform::PhysicsTransformSystems,
-    prelude::{
-        Forces, LinearVelocity, PhysicsDebugPlugin, PhysicsGizmos, PhysicsSystems,
-        WriteRigidBodyForces,
-    },
+    prelude::{Forces, LinearVelocity, PhysicsSystems, WriteRigidBodyForces},
 };
 use bevy::{camera::ScalingMode, prelude::*, window::PrimaryWindow};
 
@@ -20,14 +17,6 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(PhysicsPlugins::default())
         .init_resource::<SpeedOfLight>();
-
-    app.add_plugins(PhysicsDebugPlugin).insert_gizmo_config(
-        PhysicsGizmos {
-            axis_lengths: None,
-            ..default()
-        },
-        GizmoConfig::default(),
-    );
 
     app.add_systems(FixedUpdate, apply_movement.in_set(PausableSystems))
         .add_systems(
