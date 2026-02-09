@@ -1,24 +1,32 @@
 use avian2d::{
     PhysicsPlugins,
-    prelude::{Forces, LinearVelocity, WriteRigidBodyForces},
+    physics_transform::PhysicsTransformSystems,
+    prelude::{Forces, LinearVelocity, PhysicsSystems, WriteRigidBodyForces},
 };
-use bevy::prelude::*;
+use bevy::{camera::ScalingMode, prelude::*, window::PrimaryWindow};
 
 use crate::{
     PausableSystems,
-    demo::{movement::MovementController, player::Player},
+    demo::{
+        level::LevelGeometry,
+        movement::MovementController,
+        player::{Player, PlayerCamera},
+    },
 };
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(PhysicsPlugins::default())
         .init_resource::<SpeedOfLight>();
 
-    app.add_systems(
-        FixedUpdate,
-        (apply_movement, update_lorentz_factors)
-            .chain()
-            .in_set(PausableSystems),
-    );
+    app.add_systems(FixedUpdate, apply_movement.in_set(PausableSystems))
+        .add_systems(
+            FixedPostUpdate,
+            (
+                (update_level_length_contraction, update_length_contraction)
+                    .before(PhysicsTransformSystems::Propagate),
+                update_lorentz_factors.in_set(PhysicsSystems::StepSimulation),
+            ),
+        );
 }
 
 #[derive(Resource, Reflect, Deref, Clone, Copy, PartialEq, PartialOrd)]
@@ -38,16 +46,16 @@ pub struct LorentzFactor {
 }
 
 impl LorentzFactor {
-    const CLAMP_INFINITE: f32 = 1000.0;
+    const CLAMP_INFINITE: f32 = 100.0;
 
     fn new(v: Vec2, c: SpeedOfLight) -> Self {
         let (dir, speed) = v.normalize_and_length();
         let b = speed.min(c.0) / c.0;
         let g = 1.0 / (1.0 - b.powi(2)).sqrt();
-        let g = g.min(Self::CLAMP_INFINITE);
+        let g = g.clamp(1.0, Self::CLAMP_INFINITE);
         Self {
             scalar: g,
-            vector: g * dir,
+            vector: ((g - 1.) * dir).abs() + 1.,
         }
     }
 
@@ -63,16 +71,16 @@ impl LorentzFactor {
     //     self.scalar
     // }
 
-    // pub fn vector(&self) -> Vec2 {
-    //     self.vector
-    // }
+    pub fn vector(&self) -> Vec2 {
+        self.vector
+    }
 }
 
 impl Default for LorentzFactor {
     fn default() -> Self {
         Self {
             scalar: 1.0,
-            vector: Vec2::X,
+            vector: Vec2::ONE,
         }
     }
 }
@@ -92,5 +100,32 @@ fn update_lorentz_factors(
     for (target_vel, mut gamma) in &mut velocities {
         let relative_vel = player_vel.0 - target_vel.0;
         *gamma = LorentzFactor::new(relative_vel, *c);
+    }
+}
+
+fn update_level_length_contraction(
+    gamma: Single<&LorentzFactor, With<LevelGeometry>>,
+    window: Single<&Window, With<PrimaryWindow>>,
+    camera: Single<&mut Projection, With<PlayerCamera>>,
+    mut player: Single<&mut Transform, With<Player>>,
+) {
+    let Projection::Orthographic(proj) = &mut *camera.into_inner() else {
+        return;
+    };
+
+    let window_size = window.size() * gamma.vector();
+    proj.scaling_mode = ScalingMode::Fixed {
+        width: window_size.x,
+        height: window_size.y,
+    };
+
+    player.scale = gamma.vector().extend(player.scale.z);
+}
+
+fn update_length_contraction(
+    mut transforms: Query<(&LorentzFactor, &mut Transform), Without<LevelGeometry>>,
+) {
+    for (gamma, mut local) in &mut transforms {
+        local.scale = (1.0 / gamma.vector()).extend(local.scale.z);
     }
 }
