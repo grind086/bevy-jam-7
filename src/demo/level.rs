@@ -57,7 +57,6 @@ pub fn spawn_level(
         .spawn((
             Name::new("Level"),
             CurrentLevel(level_assets.level.clone()),
-            // Transform::from_translation(level.center_position().extend(0.0)),
             Transform::default(),
             Visibility::default(),
             DespawnOnExit(Screen::Gameplay),
