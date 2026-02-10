@@ -7,3 +7,4 @@
 
 - [Platformer World](https://elvgames.itch.io/complete-platformer-world-asset-bundle) by ElvGames
   - `assets/images/PS_Tileset_10.png`
+  - `assets/images/Hero_001.png`

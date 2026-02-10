@@ -107,7 +107,7 @@ pub enum PlayerAnimationState {
 
 impl PlayerAnimation {
     /// The number of idle frames.
-    const IDLE_FRAMES: usize = 2;
+    const IDLE_FRAMES: usize = 6;
     /// The duration of each idle frame.
     const IDLE_INTERVAL: Duration = Duration::from_millis(500);
     /// The number of walking frames.
