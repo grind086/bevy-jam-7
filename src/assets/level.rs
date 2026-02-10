@@ -201,7 +201,11 @@ async fn build_tilemap_from_layer(
 #[cfg(feature = "dev_native")]
 pub(super) mod hot_reload {
     use avian2d::prelude::RigidBody;
-    use bevy::{asset::AssetEventSystems, prelude::*};
+    use bevy::{
+        asset::AssetEventSystems,
+        prelude::*,
+        sprite_render::{AlphaMode2d, TilemapChunk},
+    };
 
     use crate::{
         assets::level::Level,
@@ -220,22 +224,17 @@ pub(super) mod hot_reload {
     fn reload_level(
         mut asset_events: MessageReader<AssetEvent<Level>>,
         levels: Res<Assets<Level>>,
-        current_level: Single<(&CurrentLevel, &mut Transform)>,
+        level_handle: Single<&CurrentLevel>,
         level_geometry: Single<(Entity, &Children), With<LevelGeometry>>,
         mut commands: Commands,
     ) {
-        let (level_handle, mut level_transform) = current_level.into_inner();
-
         for ev in asset_events.read() {
             match ev {
                 &AssetEvent::Modified { id } if id == level_handle.id() => {
                     let level = levels.get(id).unwrap();
                     info!("Reloading level {:?}", level.name);
 
-                    // Update level position
-                    level_transform.translation = level.center_position().extend(0.0);
-
-                    // Despawn existing terrain colliders
+                    // Despawn existing tilemap and colliders
                     let despawn_batch: Vec<_> = level_geometry.1.iter().collect();
 
                     commands.queue(move |world: &mut World| {
@@ -243,6 +242,19 @@ pub(super) mod hot_reload {
                             world.despawn(entity);
                         })
                     });
+
+                    // Spawn tilemap
+                    commands.spawn((
+                        Name::new("Terrain Tilemap"),
+                        Transform::from_translation(level.center_position().extend(0.0)),
+                        TilemapChunk {
+                            tile_display_size: UVec2::ONE,
+                            chunk_size: level.grid_size,
+                            tileset: level.terrain_tileset.clone(),
+                            alpha_mode: AlphaMode2d::Blend,
+                        },
+                        level.terrain_tiledata.clone(),
+                    ));
 
                     // Spawn new terrain colliders
                     let terrain_colliders: Vec<_> = level
