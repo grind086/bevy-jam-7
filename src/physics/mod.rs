@@ -1,32 +1,27 @@
 use avian2d::{
     PhysicsPlugins,
     physics_transform::PhysicsTransformSystems,
-    prelude::{Forces, LinearVelocity, PhysicsSystems, WriteRigidBodyForces},
+    prelude::{LinearVelocity, PhysicsSystems},
 };
 use bevy::{camera::ScalingMode, prelude::*, window::PrimaryWindow};
 
-use crate::{
-    PausableSystems,
-    demo::{
-        level::LevelGeometry,
-        movement::MovementController,
-        player::{Player, PlayerCamera},
-    },
+use crate::demo::{
+    level::LevelGeometry,
+    player::{Player, PlayerCamera},
 };
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(PhysicsPlugins::default())
         .insert_resource(SpeedOfLight(50.0));
 
-    app.add_systems(FixedUpdate, apply_movement.in_set(PausableSystems))
-        .add_systems(
-            FixedPostUpdate,
-            (
-                (update_level_length_contraction, update_length_contraction)
-                    .before(PhysicsTransformSystems::Propagate),
-                update_lorentz_factors.in_set(PhysicsSystems::StepSimulation),
-            ),
-        );
+    app.add_systems(
+        FixedPostUpdate,
+        (
+            (update_level_length_contraction, update_length_contraction)
+                .before(PhysicsTransformSystems::Propagate),
+            update_lorentz_factors.in_set(PhysicsSystems::StepSimulation),
+        ),
+    );
 }
 
 #[derive(Resource, Reflect, Deref, Clone, Copy, PartialEq, PartialOrd)]
@@ -82,13 +77,6 @@ impl Default for LorentzFactor {
             scalar: 1.0,
             vector: Vec2::ONE,
         }
-    }
-}
-
-fn apply_movement(mut movement_query: Query<(&MovementController, Forces)>) {
-    for (controller, mut forces) in &mut movement_query {
-        let velocity = controller.max_speed * controller.intent;
-        forces.apply_local_linear_impulse(velocity);
     }
 }
 
