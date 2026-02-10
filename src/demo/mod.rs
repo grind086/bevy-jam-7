@@ -17,4 +17,9 @@ pub(super) fn plugin(app: &mut App) {
         movement::plugin,
         player::plugin,
     ));
+
+    #[cfg(feature = "dev_native")]
+    {
+        app.add_plugins(level::hot_reload::plugin);
+    }
 }
