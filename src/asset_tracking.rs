@@ -39,10 +39,11 @@ impl LoadResource for App {
 /// A function that inserts a loaded resource.
 type InsertLoadedResource = fn(&mut World, &UntypedHandle);
 
-#[derive(Resource, Default)]
+#[derive(Resource, Reflect, Default)]
 pub struct ResourceHandles {
     // Use a queue for waiting assets so they can be cycled through and moved to
     // `finished` one at a time.
+    #[reflect(ignore)]
     waiting: VecDeque<(UntypedHandle, InsertLoadedResource)>,
     finished: Vec<UntypedHandle>,
 }
