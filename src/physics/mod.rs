@@ -12,6 +12,7 @@ use crate::demo::{
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(PhysicsPlugins::default())
+        .init_resource::<LorentzClamp>()
         .insert_resource(SpeedOfLight(50.0));
 
     app.add_systems(
@@ -34,6 +35,16 @@ impl Default for SpeedOfLight {
     }
 }
 
+#[derive(Resource, Reflect, Deref, Clone, Copy, PartialEq, PartialOrd)]
+#[reflect(Resource)]
+pub struct LorentzClamp(pub f32);
+
+impl Default for LorentzClamp {
+    fn default() -> Self {
+        Self(15.0)
+    }
+}
+
 #[derive(Component, Reflect)]
 pub struct LorentzFactor {
     scalar: f32,
@@ -41,13 +52,11 @@ pub struct LorentzFactor {
 }
 
 impl LorentzFactor {
-    const CLAMP_INFINITE: f32 = 100.0;
-
-    fn new(v: Vec2, c: SpeedOfLight) -> Self {
+    fn new(v: Vec2, c: SpeedOfLight, clamp: LorentzClamp) -> Self {
         let (dir, speed) = v.normalize_and_length();
         let b = speed.min(c.0) / c.0;
         let g = 1.0 / (1.0 - b.powi(2)).sqrt();
-        let g = g.clamp(1.0, Self::CLAMP_INFINITE);
+        let g = g.clamp(1.0, clamp.0);
         Self {
             scalar: g,
             vector: ((g - 1.) * dir).abs() + 1.,
@@ -82,12 +91,13 @@ impl Default for LorentzFactor {
 
 fn update_lorentz_factors(
     c: Res<SpeedOfLight>,
+    clamp: Res<LorentzClamp>,
     player_vel: Single<&LinearVelocity, With<Player>>,
     mut velocities: Query<(&LinearVelocity, &mut LorentzFactor)>,
 ) {
     for (target_vel, mut gamma) in &mut velocities {
         let relative_vel = player_vel.0 - target_vel.0;
-        *gamma = LorentzFactor::new(relative_vel, *c);
+        *gamma = LorentzFactor::new(relative_vel, *c, *clamp);
     }
 }
 
