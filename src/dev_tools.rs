@@ -11,7 +11,10 @@ use bevy_inspector_egui::{
     quick::{ResourceInspectorPlugin, WorldInspectorPlugin},
 };
 
-use crate::{physics::SpeedOfLight, screens::Screen};
+use crate::{
+    physics::{LorentzClamp, SpeedOfLight},
+    screens::Screen,
+};
 
 const INSPECTOR_TOGGLE_KEY: KeyCode = KeyCode::Backquote;
 const UI_DEBUG_TOGGLE_KEY: KeyCode = KeyCode::F1;
@@ -22,6 +25,8 @@ pub(super) fn plugin(app: &mut App) {
         EguiPlugin::default(),
         WorldInspectorPlugin::default().run_if(input_toggle_active(true, INSPECTOR_TOGGLE_KEY)),
         ResourceInspectorPlugin::<SpeedOfLight>::new()
+            .run_if(input_toggle_active(true, INSPECTOR_TOGGLE_KEY)),
+        ResourceInspectorPlugin::<LorentzClamp>::new()
             .run_if(input_toggle_active(true, INSPECTOR_TOGGLE_KEY)),
     ));
 
