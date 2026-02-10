@@ -1,14 +1,15 @@
 use bevy::{
-    asset::{AssetLoader, LoadContext, io::Reader},
-    platform::collections::HashMap,
+    asset::{AssetLoader, LoadContext, LoadDirectError, io::Reader},
+    platform::collections::{HashMap, hash_map::Entry},
     prelude::*,
     sprite_render::{TileData, TilemapChunkTileData},
 };
+use thiserror::Error;
 
 use crate::assets::{
     level::{
         level_collision::{LevelCollider, LevelCollisionBuilder},
-        tileset_image::TilesetImageBuilder,
+        tileset_image::{AddTileError, TilesetImageBuilder, UnsupportedFormatError},
     },
     serialize::ldtk::{
         EntityInstance as LdtkEntity, LayerInstance as LdtkLayer, Level as LdtkLevel,
@@ -87,9 +88,7 @@ impl AssetLoader for LevelLoader {
 
         let terrain_tiles_layer = get_named_layer(&ldtk, "TerrainTiles").unwrap();
         let (terrain_tileset, terrain_tiledata) =
-            build_tilemap_from_layer(load_context, terrain_tiles_layer)
-                .await
-                .unwrap();
+            build_tilemap_from_layer(load_context, terrain_tiles_layer).await?;
 
         Ok(Level {
             name: ldtk.identifier,
@@ -122,46 +121,58 @@ fn get_named_entity<'a>(layer: &'a LdtkLayer, name: &str) -> Option<&'a LdtkEnti
         .find(|entity| entity.identifier == name)
 }
 
+#[derive(Debug, Error)]
+pub enum BuildTilemapError {
+    #[error("layer has no `tileset_rel_path` property")]
+    PathNotFound,
+    #[error("failed to load tileset image: {0}")]
+    LoadTilesetImage(#[from] LoadDirectError),
+    #[error(transparent)]
+    Format(#[from] UnsupportedFormatError),
+    #[error("failed to copy tile from source offset {offset:?}: {error}")]
+    AddTile {
+        offset: UVec2,
+        #[source]
+        error: AddTileError,
+    },
+}
+
 async fn build_tilemap_from_layer(
     load_context: &mut LoadContext<'_>,
     layer: &LdtkLayer,
-) -> Option<(Handle<Image>, TilemapChunkTileData)> {
-    let tileset_path = layer.tileset_rel_path.as_ref()?;
+) -> Result<(Handle<Image>, TilemapChunkTileData), BuildTilemapError> {
+    let tileset_path = layer
+        .tileset_rel_path
+        .as_ref()
+        .ok_or(BuildTilemapError::PathNotFound)?;
     let tileset_image = load_context
         .loader()
         .immediate()
         .load::<Image>(tileset_path)
-        .await
-        .ok()?;
+        .await?;
 
+    let tile_size = layer.grid_size;
     let tiles = if layer.grid_tiles.is_empty() {
-        if layer.auto_layer_tiles.is_empty() {
-            // No tiles to build a tilemap from
-            return None;
-        }
         &layer.auto_layer_tiles
     } else {
         &layer.grid_tiles
     };
 
-    let tile_size = layer.grid_size;
-
     let mut tile_id_map = HashMap::new();
     let mut tileset_builder = TilesetImageBuilder::new(
         UVec2::splat(tile_size as _),
         tileset_image.get().texture_descriptor.format,
-    )
-    .unwrap();
+    )?;
 
     for tile in tiles {
-        tile_id_map.entry(tile.t).or_insert_with(|| {
-            tileset_builder
-                .add_tile(
-                    tileset_image.get(),
-                    UVec2::new(tile.src[0] as _, tile.src[1] as _),
-                )
-                .unwrap()
-        });
+        let offset = UVec2::new(tile.src[0] as _, tile.src[1] as _);
+        if let Entry::Vacant(e) = tile_id_map.entry(tile.t) {
+            e.insert(
+                tileset_builder
+                    .add_tile(tileset_image.get(), offset)
+                    .map_err(|error| BuildTilemapError::AddTile { offset, error })?,
+            );
+        }
     }
 
     let w = layer.c_wid as usize;
@@ -184,7 +195,7 @@ async fn build_tilemap_from_layer(
         tileset_builder.build(),
     );
 
-    Some((tileset_image, TilemapChunkTileData(tile_data)))
+    Ok((tileset_image, TilemapChunkTileData(tile_data)))
 }
 
 #[cfg(feature = "dev_native")]

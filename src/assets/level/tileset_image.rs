@@ -5,6 +5,7 @@ use bevy::{
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
+use thiserror::Error;
 
 pub struct TilesetImageBuilder {
     tile_size: USizeVec2,
@@ -15,11 +16,13 @@ pub struct TilesetImageBuilder {
 }
 
 impl TilesetImageBuilder {
-    pub fn new(tile_size: UVec2, format: TextureFormat) -> Option<Self> {
-        Some(Self {
+    pub fn new(tile_size: UVec2, format: TextureFormat) -> Result<Self, UnsupportedFormatError> {
+        Ok(Self {
             tile_size: tile_size.as_usizevec2(),
             format,
-            px_bytes: format.pixel_size().ok()?,
+            px_bytes: format
+                .pixel_size()
+                .map_err(|_| UnsupportedFormatError(format))?,
             data: Vec::new(),
             tiles: 0,
         })
@@ -85,13 +88,19 @@ impl TilesetImageBuilder {
     }
 }
 
-#[derive(Debug)]
-#[allow(unused)]
+#[derive(Debug, Error)]
+#[error("source image format {0:?} is unsupported")]
+pub struct UnsupportedFormatError(pub TextureFormat);
+
+#[derive(Debug, Error)]
 pub enum AddTileError {
+    #[error("source image is uninitialized")]
     NoSourceData,
+    #[error("expected source image to be in format {exp:?}, but it was {got:?}")]
     IncorrectFormat {
         exp: TextureFormat,
         got: TextureFormat,
     },
+    #[error("the source tile extends beyond the source image's bounds")]
     InvalidSourceOffset,
 }
