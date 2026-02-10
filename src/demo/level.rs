@@ -18,6 +18,11 @@ use crate::{
 
 pub(super) fn plugin(app: &mut App) {
     app.load_resource::<LevelAssets>();
+
+    #[cfg(feature = "dev_native")]
+    {
+        app.add_plugins(hot_reload::plugin);
+    }
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
