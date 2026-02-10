@@ -16,7 +16,7 @@ use crate::{
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(PhysicsPlugins::default())
-        .init_resource::<SpeedOfLight>();
+        .insert_resource(SpeedOfLight(50.0));
 
     app.add_systems(FixedUpdate, apply_movement.in_set(PausableSystems))
         .add_systems(
