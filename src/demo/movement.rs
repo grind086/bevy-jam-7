@@ -13,9 +13,7 @@
 //! purposes. If you want to move the player in a smoother way,
 //! consider using a [fixed timestep](https://github.com/bevyengine/bevy/blob/main/examples/movement/physics_in_fixed_timestep.rs).
 
-use avian2d::prelude::{
-    Collider, Forces, ShapeCastConfig, SpatialQuery, SpatialQueryFilter, WriteRigidBodyForces,
-};
+use avian2d::prelude::{Collisions, Forces, WriteRigidBodyForces};
 use bevy::prelude::*;
 
 use crate::PausableSystems;
@@ -45,8 +43,6 @@ pub struct MovementController {
     pub max_speed: f32,
     pub air_speed: f32,
     pub jump_strength: f32,
-    pub foot_offset: Vec2,
-    pub foot_width: f32,
 
     pub has_been_grounded: bool,
 }
@@ -58,10 +54,7 @@ impl Default for MovementController {
             jump: false,
             max_speed: 1.0,
             air_speed: 0.1,
-            jump_strength: 15.,
-            // For a 1.8m tall entity
-            foot_offset: Vec2::new(0.0, -0.9),
-            foot_width: 0.6,
+            jump_strength: 20.,
             has_been_grounded: true,
         }
     }
@@ -71,24 +64,26 @@ impl Default for MovementController {
 #[reflect(Component)]
 pub struct OnGround(bool);
 
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+#[relationship_target(relationship = FootSensorOf)]
+pub struct FootSensor(Entity);
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+#[relationship(relationship_target = FootSensor)]
+pub struct FootSensorOf(pub Entity);
+
 fn update_grounded(
-    spatial_query: SpatialQuery,
-    mut controllers: Query<(Entity, &GlobalTransform, &MovementController, &mut OnGround)>,
+    collisions: Collisions,
+    mut controllers: Query<(Entity, &FootSensor, &mut OnGround)>,
 ) {
-    for (entity, transform, controller, mut on_ground) in &mut controllers {
+    for (entity, foot_sensor, mut on_ground) in &mut controllers {
         on_ground.set_if_neq(OnGround(
-            spatial_query
-                .cast_shape(
-                    &Collider::rectangle(controller.foot_width, 0.02),
-                    transform.translation().xy() + controller.foot_offset,
-                    0.0,
-                    Dir2::NEG_Y,
-                    &ShapeCastConfig {
-                        max_distance: 0.01,
-                        ..default()
-                    },
-                    &SpatialQueryFilter::from_excluded_entities([entity]),
-                )
+            collisions
+                .entities_colliding_with(foot_sensor.0)
+                .filter(|e| *e != entity)
+                .next()
                 .is_some(),
         ));
     }
