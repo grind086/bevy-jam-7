@@ -59,13 +59,14 @@ pub fn player(
         Children::spawn(SpawnWith(|related: &mut RelatedSpawner<ChildOf>| {
             related.spawn((
                 Transform::from_translation(0.5 * Vec3::NEG_Y),
-                Collider::capsule(0.40, 0.2),
+                // Collider::capsule(0.40, 0.2),
+                Collider::rectangle(0.8, 1.0),
             ));
             related.spawn((
                 Sensor,
                 FootSensorOf(related.target_entity()),
                 Transform::from_translation(1.0 * Vec3::NEG_Y),
-                Collider::rectangle(0.5, 0.04),
+                Collider::rectangle(0.75, 0.04),
             ));
         })),
         RigidBody::Dynamic,
