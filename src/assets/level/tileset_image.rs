@@ -46,7 +46,7 @@ impl TilesetImageBuilder {
 
         let byte_offset = linear_offset as usize * self.px_bytes;
         let srow_bytes = source_image.width() as usize * self.px_bytes;
-        let trow_bytes = self.tile_size.x as usize * self.px_bytes;
+        let trow_bytes = self.tile_size.x * self.px_bytes;
 
         let last_byte = byte_offset + (self.tile_size.y - 1) * srow_bytes + trow_bytes;
         if last_byte > source_data.len() {
