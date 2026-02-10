@@ -11,7 +11,7 @@ use std::time::Duration;
 use crate::{
     AppSystems, PausableSystems,
     audio::sound_effect,
-    demo::{movement::MovementController, player::PlayerAssets},
+    demo::{movement::MovementIntent, player::PlayerAssets},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -41,15 +41,14 @@ fn update_animation_timer(time: Res<Time>, mut query: Query<&mut PlayerAnimation
 
 /// Update the sprite direction and animation state (idling/walking).
 fn update_animation_movement(
-    mut player_query: Query<(&MovementController, &mut Sprite, &mut PlayerAnimation)>,
+    mut player_query: Query<(&MovementIntent, &mut Sprite, &mut PlayerAnimation)>,
 ) {
-    for (controller, mut sprite, mut animation) in &mut player_query {
-        let dx = controller.intent.x;
-        if dx != 0.0 {
-            sprite.flip_x = dx < 0.0;
+    for (intent, mut sprite, mut animation) in &mut player_query {
+        if intent.direction != 0.0 {
+            sprite.flip_x = intent.direction < 0.0;
         }
 
-        let animation_state = if controller.intent == Vec2::ZERO {
+        let animation_state = if intent.direction == 0.0 {
             PlayerAnimationState::Idling
         } else {
             PlayerAnimationState::Walking

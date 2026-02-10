@@ -8,7 +8,7 @@ use crate::{
     asset_tracking::LoadResource,
     demo::{
         animation::PlayerAnimation,
-        movement::{FootSensorOf, MovementController},
+        movement::{FootSensorOf, MovementController, MovementIntent},
     },
 };
 
@@ -90,23 +90,14 @@ pub struct PlayerCamera;
 
 fn record_player_directional_input(
     input: Res<ButtonInput<KeyCode>>,
-    mut controller: Single<&mut MovementController, With<Player>>,
+    mut intent: Single<&mut MovementIntent, With<Player>>,
 ) {
     // Collect directional input.
-    let mut intent = Vec2::ZERO;
-    if input.pressed(KeyCode::KeyA) || input.pressed(KeyCode::ArrowLeft) {
-        intent.x -= 1.0;
-    }
-    if input.pressed(KeyCode::KeyD) || input.pressed(KeyCode::ArrowRight) {
-        intent.x += 1.0;
-    }
+    let lt = input.any_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]);
+    let rt = input.any_pressed([KeyCode::KeyD, KeyCode::ArrowRight]);
 
-    // Normalize intent so that diagonal movement is the same speed as horizontal / vertical.
-    // This should be omitted if the input comes from an analog stick instead.
-    let intent = intent.normalize_or_zero();
-
-    controller.intent = intent;
-    controller.jump = input.pressed(KeyCode::Space);
+    intent.direction = (rt as i8 - lt as i8).into();
+    intent.jump = input.pressed(KeyCode::Space);
 }
 
 fn update_player_camera_position(

@@ -30,14 +30,8 @@ pub(super) fn plugin(app: &mut App) {
 /// other players as well.
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-#[require(OnGround)]
+#[require(MovementIntent, OnGround)]
 pub struct MovementController {
-    /// The direction the character wants to move in.
-    pub intent: Vec2,
-
-    /// Whether the character is trying to jump.
-    pub jump: bool,
-
     /// Maximum speed in world units per second.
     /// 1 world unit = 1 meter.
     pub max_speed: f32,
@@ -50,14 +44,19 @@ pub struct MovementController {
 impl Default for MovementController {
     fn default() -> Self {
         Self {
-            intent: Vec2::ZERO,
-            jump: false,
             max_speed: 1.0,
             air_speed: 0.1,
             jump_strength: 20.,
             has_been_grounded: true,
         }
     }
+}
+
+#[derive(Component, Reflect, Default)]
+#[reflect(Component, Default)]
+pub struct MovementIntent {
+    pub direction: f32,
+    pub jump: bool,
 }
 
 #[derive(Component, Reflect, Default, Deref, Clone, Copy, PartialEq, Eq)]
@@ -88,21 +87,28 @@ fn update_grounded(
     }
 }
 
-fn apply_movement(mut movement_query: Query<(&mut MovementController, Ref<OnGround>, Forces)>) {
-    for (mut controller, on_ground, mut forces) in &mut movement_query {
+fn apply_movement(
+    mut movement_query: Query<(
+        &MovementIntent,
+        &mut MovementController,
+        Ref<OnGround>,
+        Forces,
+    )>,
+) {
+    for (intent, mut controller, on_ground, mut forces) in &mut movement_query {
         let velocity = if on_ground.0 {
             controller.max_speed
         } else {
             controller.air_speed
-        } * controller.intent;
-        forces.apply_local_linear_impulse(velocity);
+        } * intent.direction;
+        forces.apply_local_linear_impulse(velocity * Vec2::X);
 
         if on_ground.0 {
             if on_ground.is_changed() {
                 controller.has_been_grounded = true;
             }
 
-            if controller.jump && controller.has_been_grounded {
+            if intent.jump && controller.has_been_grounded {
                 forces.apply_local_linear_impulse(controller.jump_strength * Vec2::Y);
                 controller.has_been_grounded = false;
             }
