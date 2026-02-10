@@ -14,7 +14,7 @@ mod physics;
 mod screens;
 mod theme;
 
-use bevy::{asset::AssetMetaCheck, prelude::*};
+use bevy::{asset::AssetMetaCheck, image::ImageSamplerDescriptor, prelude::*};
 
 use crate::demo::player::PlayerCamera;
 
@@ -35,6 +35,11 @@ impl Plugin for AppPlugin {
                     // See https://github.com/bevyengine/bevy_github_ci_template/issues/48.
                     meta_check: AssetMetaCheck::Never,
                     ..default()
+                })
+                .set(ImagePlugin {
+                    // Set the default image sampler to nearest since we're using pixel art for
+                    // everything.
+                    default_sampler: ImageSamplerDescriptor::nearest(),
                 })
                 .set(WindowPlugin {
                     primary_window: Window {
