@@ -82,8 +82,7 @@ fn update_grounded(
         on_ground.set_if_neq(OnGround(
             collisions
                 .entities_colliding_with(foot_sensor.0)
-                .filter(|e| *e != entity)
-                .next()
+                .find(|e| *e != entity)
                 .is_some(),
         ));
     }
