@@ -13,7 +13,7 @@
 //! purposes. If you want to move the player in a smoother way,
 //! consider using a [fixed timestep](https://github.com/bevyengine/bevy/blob/main/examples/movement/physics_in_fixed_timestep.rs).
 
-use avian2d::prelude::{Collisions, Forces, WriteRigidBodyForces};
+use avian2d::prelude::{Collisions, Forces, LinearVelocity, WriteRigidBodyForces};
 use bevy::prelude::*;
 
 use crate::PausableSystems;
@@ -21,7 +21,7 @@ use crate::PausableSystems;
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         FixedUpdate,
-        (update_grounded, apply_movement).in_set(PausableSystems),
+        (update_grounded, apply_movement, apply_movement_damping).in_set(PausableSystems),
     );
 }
 
@@ -37,6 +37,7 @@ pub struct MovementController {
     pub max_speed: f32,
     pub air_speed: f32,
     pub jump_strength: f32,
+    pub damping_factor: f32,
 
     pub has_been_grounded: bool,
 }
@@ -47,6 +48,7 @@ impl Default for MovementController {
             max_speed: 1.0,
             air_speed: 0.1,
             jump_strength: 20.,
+            damping_factor: 0.9,
             has_been_grounded: true,
         }
     }
@@ -113,5 +115,15 @@ fn apply_movement(
                 controller.has_been_grounded = false;
             }
         }
+    }
+}
+
+fn apply_movement_damping(
+    time: Res<Time>,
+    mut query: Query<(&MovementController, &mut LinearVelocity)>,
+) {
+    let dt = time.delta_secs();
+    for (controller, mut linear_velocity) in &mut query {
+        linear_velocity.x *= 1.0 / (1.0 + controller.damping_factor * dt);
     }
 }
