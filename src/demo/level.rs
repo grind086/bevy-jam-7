@@ -2,6 +2,7 @@
 
 use avian2d::prelude::RigidBody;
 use bevy::{
+    ecs::bundle::NoBundleEffect,
     prelude::*,
     sprite_render::{AlphaMode2d, TilemapChunk},
 };
@@ -53,7 +54,7 @@ pub fn spawn_level(
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     let level = levels.get(&level_assets.level).unwrap();
-    let level_id = commands
+    commands
         .spawn((
             Name::new("Level"),
             CurrentLevel(level_assets.level.clone()),
@@ -73,61 +74,63 @@ pub fn spawn_level(
                 ),
             ],
         ))
-        .id();
+        .with_children(|children| {
+            let geometry_id = children
+                .spawn((
+                    Name::new("Level Geometry"),
+                    LevelGeometry,
+                    LorentzFactor::default(),
+                    Visibility::default(),
+                    RigidBody::Static,
+                    children![tilemap(level)],
+                ))
+                .id();
 
-    let level_geometry_id = commands
-        .spawn((
-            Name::new("Level Geometry"),
-            LevelGeometry,
-            LorentzFactor::default(),
-            Visibility::default(),
-            ChildOf(level_id),
-            RigidBody::Static,
-            children![(
-                Name::new("Terrain Tilemap"),
-                Transform::from_translation(level.center_position().extend(0.0)),
-                TilemapChunk {
-                    tile_display_size: UVec2::ONE,
-                    chunk_size: level.grid_size,
-                    tileset: level.terrain_tileset.clone(),
-                    alpha_mode: AlphaMode2d::Blend,
-                },
-                level.terrain_tiledata.clone(),
-            )],
-        ))
-        .id();
+            children
+                .commands()
+                .spawn_batch(colliders_batch(level, geometry_id));
+        });
+}
 
-    let terrain_colliders: Vec<_> = level
+fn tilemap(level: &Level) -> impl Bundle {
+    (
+        Name::new("Terrain Tilemap"),
+        Transform::from_translation(level.center_position().extend(0.0)),
+        TilemapChunk {
+            tile_display_size: UVec2::ONE,
+            chunk_size: level.grid_size,
+            tileset: level.terrain_tileset.clone(),
+            alpha_mode: AlphaMode2d::Blend,
+        },
+        level.terrain_tiledata.clone(),
+    )
+}
+
+fn colliders_batch(
+    level: &Level,
+    level_geometry: Entity,
+) -> Vec<impl Bundle<Effect: NoBundleEffect>> {
+    level
         .terrain_colliders
         .iter()
         .map(|tc| {
             let (collider, transform) = tc.into_collider_and_transform(1.0);
             (
                 Name::new("Terrain Collider"),
-                ChildOf(level_geometry_id),
+                ChildOf(level_geometry),
                 RigidBody::Static,
                 collider,
                 transform,
             )
         })
-        .collect();
-
-    commands.spawn_batch(terrain_colliders);
+        .collect()
 }
 
 #[cfg(feature = "dev_native")]
 pub(super) mod hot_reload {
-    use avian2d::prelude::RigidBody;
-    use bevy::{
-        asset::AssetEventSystems,
-        prelude::*,
-        sprite_render::{AlphaMode2d, TilemapChunk},
-    };
+    use bevy::asset::AssetEventSystems;
 
-    use crate::{
-        assets::level::Level,
-        demo::level::{CurrentLevel, LevelGeometry},
-    };
+    use super::*;
 
     pub fn plugin(app: &mut App) {
         app.add_systems(
@@ -161,35 +164,10 @@ pub(super) mod hot_reload {
                     });
 
                     // Spawn tilemap
-                    commands.spawn((
-                        Name::new("Terrain Tilemap"),
-                        Transform::from_translation(level.center_position().extend(0.0)),
-                        TilemapChunk {
-                            tile_display_size: UVec2::ONE,
-                            chunk_size: level.grid_size,
-                            tileset: level.terrain_tileset.clone(),
-                            alpha_mode: AlphaMode2d::Blend,
-                        },
-                        level.terrain_tiledata.clone(),
-                    ));
+                    commands.spawn((tilemap(level), ChildOf(level_geometry.0)));
 
                     // Spawn new terrain colliders
-                    let terrain_colliders: Vec<_> = level
-                        .terrain_colliders
-                        .iter()
-                        .map(|tc| {
-                            let (collider, transform) = tc.into_collider_and_transform(1.0);
-                            (
-                                Name::new("Terrain Collider"),
-                                ChildOf(level_geometry.0),
-                                RigidBody::Static,
-                                collider,
-                                transform,
-                            )
-                        })
-                        .collect();
-
-                    commands.spawn_batch(terrain_colliders);
+                    commands.spawn_batch(colliders_batch(level, level_geometry.0));
                 }
                 _ => {}
             }

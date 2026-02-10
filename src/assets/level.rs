@@ -8,7 +8,7 @@ use thiserror::Error;
 
 use crate::assets::{
     level::{
-        level_collision::{LevelCollider, LevelCollisionBuilder},
+        level_collision::LevelCollisionBuilder,
         tileset_image::{AddTileError, TilesetImageBuilder, UnsupportedFormatError},
     },
     serialize::ldtk::{
@@ -18,6 +18,8 @@ use crate::assets::{
 
 mod level_collision;
 mod tileset_image;
+
+pub use level_collision::LevelCollider;
 
 #[derive(Asset, Reflect)]
 pub struct Level {
