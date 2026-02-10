@@ -2,7 +2,7 @@ use bevy::{
     asset::{AssetLoader, LoadContext, io::Reader},
     platform::collections::HashMap,
     prelude::*,
-    sprite_render::TileData,
+    sprite_render::{TileData, TilemapChunkTileData},
 };
 
 use crate::assets::{
@@ -25,7 +25,7 @@ pub struct Level {
     pub grid_offset: IVec2,
     pub player_spawn: IVec2,
     pub terrain_tileset: Handle<Image>,
-    pub terrain_tiledata: Vec<TileData>,
+    pub terrain_tiledata: TilemapChunkTileData,
     pub terrain_colliders: Vec<LevelCollider>,
 }
 
@@ -125,7 +125,7 @@ fn get_named_entity<'a>(layer: &'a LdtkLayer, name: &str) -> Option<&'a LdtkEnti
 async fn build_tilemap_from_layer(
     load_context: &mut LoadContext<'_>,
     layer: &LdtkLayer,
-) -> Option<(Handle<Image>, Vec<TileData>)> {
+) -> Option<(Handle<Image>, TilemapChunkTileData)> {
     let tileset_path = layer.tileset_rel_path.as_ref()?;
     let tileset_image = load_context
         .loader()
@@ -154,24 +154,25 @@ async fn build_tilemap_from_layer(
     .unwrap();
 
     for tile in tiles {
-        let key = UVec2::new(tile.src[0] as _, tile.src[1] as _);
-        tile_id_map
-            .entry(key)
-            .or_insert_with(|| tileset_builder.add_tile(tileset_image.get(), key).unwrap());
+        tile_id_map.entry(tile.t).or_insert_with(|| {
+            tileset_builder
+                .add_tile(
+                    tileset_image.get(),
+                    UVec2::new(tile.src[0] as _, tile.src[1] as _),
+                )
+                .unwrap()
+        });
     }
 
-    let mut tile_data: Vec<_> = tiles
-        .iter()
-        .map(|tile| {
-            TileData::from_tileset_index(
-                tile_id_map[&UVec2::new(tile.src[0] as _, tile.src[1] as _)],
-            )
-        })
-        .collect();
-
-    // Y-flip tilemap
     let w = layer.c_wid as usize;
     let h = layer.c_hei as usize;
+    let mut tile_data = vec![None; w * h];
+    for tile in tiles {
+        let i = (tile.px[0] + layer.c_wid * tile.px[1]) / tile_size;
+        tile_data[i as usize] = Some(TileData::from_tileset_index(tile_id_map[&tile.t]));
+    }
+
+    // Y-flip tilemap
     for r in 0..h / 2 {
         let ptr = tile_data.as_mut_ptr();
         // SAFETY: Trust me bro. It'll be fine bro.
@@ -183,7 +184,7 @@ async fn build_tilemap_from_layer(
         tileset_builder.build(),
     );
 
-    Some((tileset_image, tile_data))
+    Some((tileset_image, TilemapChunkTileData(tile_data)))
 }
 
 #[cfg(feature = "dev_native")]

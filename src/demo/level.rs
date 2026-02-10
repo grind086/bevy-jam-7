@@ -1,7 +1,10 @@
 //! Spawn the main level.
 
 use avian2d::prelude::RigidBody;
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    sprite_render::{AlphaMode2d, TilemapChunk},
+};
 
 use crate::{
     asset_tracking::LoadResource,
@@ -54,7 +57,8 @@ pub fn spawn_level(
         .spawn((
             Name::new("Level"),
             CurrentLevel(level_assets.level.clone()),
-            Transform::from_translation(level.center_position().extend(0.0)),
+            // Transform::from_translation(level.center_position().extend(0.0)),
+            Transform::default(),
             Visibility::default(),
             DespawnOnExit(Screen::Gameplay),
             children![
@@ -77,8 +81,20 @@ pub fn spawn_level(
             Name::new("Level Geometry"),
             LevelGeometry,
             LorentzFactor::default(),
+            Visibility::default(),
             ChildOf(level_id),
             RigidBody::Static,
+            children![(
+                Name::new("Terrain Tilemap"),
+                Transform::from_translation(level.center_position().extend(0.0)),
+                TilemapChunk {
+                    tile_display_size: UVec2::ONE,
+                    chunk_size: level.grid_size,
+                    tileset: level.terrain_tileset.clone(),
+                    alpha_mode: AlphaMode2d::Blend,
+                },
+                level.terrain_tiledata.clone(),
+            )],
         ))
         .id();
 
