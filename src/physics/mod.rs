@@ -13,7 +13,7 @@ use crate::demo::{
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(PhysicsPlugins::default())
         .init_resource::<LorentzClamp>()
-        .insert_resource(SpeedOfLight(50.0));
+        .insert_resource(SpeedOfLight(25.0));
 
     app.add_systems(
         FixedPostUpdate,
@@ -41,7 +41,7 @@ pub struct LorentzClamp(pub f32);
 
 impl Default for LorentzClamp {
     fn default() -> Self {
-        Self(15.0)
+        Self(10.0)
     }
 }
 
