@@ -7,6 +7,7 @@ use bevy::{
 };
 use thiserror::Error;
 
+/// Used to build a 2d layered tileset [`Image`] from one or more source images.
 pub struct TilesetImageBuilder {
     tile_size: USizeVec2,
     format: TextureFormat,
@@ -16,6 +17,7 @@ pub struct TilesetImageBuilder {
 }
 
 impl TilesetImageBuilder {
+    /// Create a new tileset image builder using the given tile size and [`TextureFormat`].
     pub fn new(tile_size: UVec2, format: TextureFormat) -> Result<Self, UnsupportedFormatError> {
         Ok(Self {
             tile_size: tile_size.as_usizevec2(),
@@ -28,6 +30,8 @@ impl TilesetImageBuilder {
         })
     }
 
+    /// Copies the tile from the source image at the given pixel offset, and returns its id in
+    /// the tileset being built.
     pub fn add_tile(
         &mut self,
         source_image: &Image,
@@ -65,6 +69,7 @@ impl TilesetImageBuilder {
         Ok(self.next_tile_id())
     }
 
+    /// Returns the final tileset [`Image`].
     pub fn build(self) -> Image {
         let mut image = Image::new(
             Extent3d {
@@ -88,19 +93,25 @@ impl TilesetImageBuilder {
     }
 }
 
+/// Returned when attempting to construct a [`TilesetImageBuilder`] with an unsupported
+/// [`TextureFormat`].
 #[derive(Debug, Error)]
 #[error("source image format {0:?} is unsupported")]
 pub struct UnsupportedFormatError(pub TextureFormat);
 
+/// Errors returned by [`TilesetImageBuilder::add_tile`].
 #[derive(Debug, Error)]
 pub enum AddTileError {
+    /// The source's [`Image::data`] was `None`.
     #[error("source image is uninitialized")]
     NoSourceData,
+    /// The source image was in a different format than the builder is using.
     #[error("expected source image to be in format {exp:?}, but it was {got:?}")]
     IncorrectFormat {
         exp: TextureFormat,
         got: TextureFormat,
     },
+    /// The pixel offset into the source image was invalid.
     #[error("the source tile extends beyond the source image's bounds")]
     InvalidSourceOffset,
 }
