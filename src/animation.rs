@@ -9,6 +9,13 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
+#[derive(EntityEvent)]
+pub struct AnimationEvent {
+    #[event_target]
+    pub entity: Entity,
+    pub marker: usize,
+}
+
 #[derive(Asset, Reflect)]
 pub struct Animation {
     pub frames: Vec<Frame>,
@@ -18,8 +25,21 @@ impl Animation {
     pub fn from_frame_range_and_millis(range: Range<usize>, frame_millis: u64) -> Self {
         let duration = Duration::from_millis(frame_millis);
         Self {
-            frames: range.map(|index| Frame { index, duration }).collect(),
+            frames: range
+                .map(|index| Frame {
+                    index,
+                    duration,
+                    markers: Vec::new(),
+                })
+                .collect(),
         }
+    }
+
+    pub fn with_marker(mut self, marker: usize, frames: impl IntoIterator<Item = usize>) -> Self {
+        for i in frames {
+            self.frames[i].markers.push(marker);
+        }
+        self
     }
 }
 
@@ -27,7 +47,7 @@ impl Animation {
 pub struct Frame {
     pub index: usize,
     pub duration: Duration,
-    // pub markers: Vec<usize>,
+    pub markers: Vec<usize>,
 }
 
 #[derive(Component, Reflect)]
@@ -56,9 +76,9 @@ pub struct AnimationPlayerState {
 }
 
 impl AnimationPlayerState {
-    pub fn frame_index(&self) -> usize {
-        self.frame_index
-    }
+    // pub fn frame_index(&self) -> usize {
+    //     self.frame_index
+    // }
 
     // pub fn atlas_index(&self) -> usize {
     //     self.atlas_index
@@ -80,9 +100,9 @@ impl AnimationPlayerState {
         self.timer.tick(delta).is_finished()
     }
 
-    fn go_to_next_frame(&mut self, animation: &Animation) {
+    fn go_to_next_frame<'a>(&mut self, animation: &'a Animation) -> &'a [usize] {
         if animation.frames.is_empty() {
-            return;
+            return &[];
         }
 
         let index = (self.frame_index + 1) % animation.frames.len();
@@ -91,15 +111,18 @@ impl AnimationPlayerState {
         self.frame_index = index;
         self.atlas_index = frame.index;
         self.timer = Timer::new(frame.duration, TimerMode::Once);
+
+        &frame.markers
     }
 }
 
 fn update_animation_players(
     time: Res<Time>,
     animations: Res<Assets<Animation>>,
-    mut animation_players: Query<(Ref<AnimationPlayer>, &mut AnimationPlayerState)>,
+    mut animation_players: Query<(Entity, Ref<AnimationPlayer>, &mut AnimationPlayerState)>,
+    mut commands: Commands,
 ) {
-    for (player, mut state) in &mut animation_players {
+    for (entity, player, mut state) in &mut animation_players {
         let Some(animation) = animations.get(&player.animation) else {
             continue;
         };
@@ -110,7 +133,9 @@ fn update_animation_players(
         }
 
         if state.bypass_change_detection().tick(time.delta()) {
-            state.go_to_next_frame(animation);
+            for &marker in state.go_to_next_frame(animation) {
+                commands.trigger(AnimationEvent { entity, marker });
+            }
         }
     }
 }

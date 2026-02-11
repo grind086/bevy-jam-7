@@ -6,7 +6,7 @@ use rand::seq::IndexedRandom;
 
 use crate::{
     AppSystems, PausableSystems,
-    animation::{Animation, AnimationPlayer, AnimationPlayerState},
+    animation::{Animation, AnimationEvent, AnimationPlayer},
     asset_tracking::LoadResource,
     audio::sound_effect,
     demo::movement::{FootSensorOf, MovementController, MovementIntent, OnGround},
@@ -21,12 +21,13 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         (
             record_player_directional_input.in_set(AppSystems::RecordInput),
-            (update_animation_movement, trigger_step_sound_effect),
+            update_animation_movement,
         )
             .chain()
             .run_if(in_state(Screen::Gameplay))
             .in_set(PausableSystems),
-    );
+    )
+    .add_observer(trigger_step_sound_effect);
 
     // Update camera position
     app.add_systems(
@@ -133,21 +134,15 @@ fn update_animation_movement(
     }
 }
 
-/// If the player is moving, play a step sound effect synchronized with the
-/// animation.
 fn trigger_step_sound_effect(
-    mut commands: Commands,
+    ev: On<AnimationEvent>,
     player_assets: If<Res<PlayerAssets>>,
-    mut step_query: Query<(&AnimationPlayer, &AnimationPlayerState), Changed<AnimationPlayerState>>,
+    mut commands: Commands,
 ) {
-    for (player, state) in &mut step_query {
-        if player.animation.id() == player_assets.walk_anim.id()
-            && (state.frame_index() == 2 || state.frame_index() == 5)
-        {
-            let rng = &mut rand::rng();
-            let random_step = player_assets.steps.choose(rng).unwrap().clone();
-            commands.spawn(sound_effect(random_step));
-        }
+    if ev.marker == PlayerAssets::STEP_MARKER {
+        let rng = &mut rand::rng();
+        let random_step = player_assets.steps.choose(rng).unwrap().clone();
+        commands.spawn(sound_effect(random_step));
     }
 }
 
@@ -170,11 +165,18 @@ pub struct PlayerAssets {
     pub fall_anim: Handle<Animation>,
 }
 
+impl PlayerAssets {
+    pub const STEP_MARKER: usize = 0;
+}
+
 impl FromWorld for PlayerAssets {
     fn from_world(world: &mut World) -> Self {
         let mut animations = world.resource_mut::<Assets<Animation>>();
         let idle_anim = animations.add(Animation::from_frame_range_and_millis(0..6, 500));
-        let walk_anim = animations.add(Animation::from_frame_range_and_millis(6..12, 50));
+        let walk_anim = animations.add(
+            Animation::from_frame_range_and_millis(6..12, 50)
+                .with_marker(Self::STEP_MARKER, [2, 5]),
+        );
         let fall_anim = animations.add(Animation::from_frame_range_and_millis(42..48, 300));
 
         let assets = world.resource::<AssetServer>();
