@@ -3,6 +3,7 @@
 // Disable console on Windows for non-dev builds.
 #![cfg_attr(not(feature = "dev"), windows_subsystem = "windows")]
 
+mod animation;
 mod asset_tracking;
 mod assets;
 mod audio;
@@ -56,6 +57,7 @@ impl Plugin for AppPlugin {
         app.add_plugins((
             assets::plugin,
             asset_tracking::plugin,
+            animation::plugin,
             audio::plugin,
             physics::plugin,
             demo::plugin,

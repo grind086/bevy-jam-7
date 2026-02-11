@@ -2,14 +2,15 @@
 
 use avian2d::prelude::{Collider, LockedAxes, Mass, RigidBody, Sensor};
 use bevy::{ecs::relationship::RelatedSpawner, prelude::*};
+use rand::seq::IndexedRandom;
 
 use crate::{
     AppSystems, PausableSystems,
+    animation::{Animation, AnimationPlayer, AnimationPlayerState},
     asset_tracking::LoadResource,
-    demo::{
-        animation::PlayerAnimation,
-        movement::{FootSensorOf, MovementController, MovementIntent},
-    },
+    audio::sound_effect,
+    demo::movement::{FootSensorOf, MovementController, MovementIntent, OnGround},
+    screens::Screen,
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -18,8 +19,12 @@ pub(super) fn plugin(app: &mut App) {
     // Record directional input as movement controls.
     app.add_systems(
         Update,
-        record_player_directional_input
-            .in_set(AppSystems::RecordInput)
+        (
+            record_player_directional_input.in_set(AppSystems::RecordInput),
+            (update_animation_movement, trigger_step_sound_effect),
+        )
+            .chain()
+            .run_if(in_state(Screen::Gameplay))
             .in_set(PausableSystems),
     );
 
@@ -37,11 +42,8 @@ pub fn player(
     player_assets: &PlayerAssets,
     texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
 ) -> impl Bundle {
-    // A texture atlas is a way to split a single image into a grid of related images.
-    // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
     let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 6, 12, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    let player_animation = PlayerAnimation::new();
 
     (
         Name::new("Player"),
@@ -50,11 +52,12 @@ pub fn player(
             image: player_assets.ducky.clone(),
             texture_atlas: Some(TextureAtlas {
                 layout: texture_atlas_layout,
-                index: player_animation.get_atlas_index(),
+                index: 0,
             }),
             custom_size: Some(Vec2::splat(2.)),
             ..default()
         },
+        AnimationPlayer::from(player_assets.idle_anim.clone()),
         Mass(1.5),
         Children::spawn(SpawnWith(|related: &mut RelatedSpawner<ChildOf>| {
             related.spawn((
@@ -66,7 +69,7 @@ pub fn player(
                 Sensor,
                 FootSensorOf(related.target_entity()),
                 Transform::from_translation(1.0 * Vec3::NEG_Y),
-                Collider::rectangle(0.75, 0.04),
+                Collider::rectangle(0.70, 0.1),
             ));
         })),
         RigidBody::Dynamic,
@@ -76,7 +79,7 @@ pub fn player(
             max_speed,
             ..default()
         },
-        player_animation,
+        // player_animation,
     )
 }
 
@@ -97,7 +100,55 @@ fn record_player_directional_input(
     let rt = input.any_pressed([KeyCode::KeyD, KeyCode::ArrowRight]);
 
     intent.direction = (rt as i8 - lt as i8).into();
-    intent.jump = input.pressed(KeyCode::Space);
+    intent.jump = input.just_pressed(KeyCode::Space);
+}
+
+fn update_animation_movement(
+    assets: Res<PlayerAssets>,
+    mut player_query: Query<(
+        &MovementIntent,
+        Option<&OnGround>,
+        &mut Sprite,
+        &mut AnimationPlayer,
+    )>,
+) {
+    for (intent, on_ground, mut sprite, mut animation) in &mut player_query {
+        if intent.direction != 0.0 {
+            sprite.flip_x = intent.direction < 0.0;
+        }
+
+        let next_anim = if on_ground.is_none_or(|g| **g) {
+            if intent.direction == 0.0 {
+                &assets.idle_anim
+            } else {
+                &assets.walk_anim
+            }
+        } else {
+            &assets.fall_anim
+        };
+
+        if next_anim.id() != animation.animation.id() {
+            animation.animation = next_anim.clone();
+        }
+    }
+}
+
+/// If the player is moving, play a step sound effect synchronized with the
+/// animation.
+fn trigger_step_sound_effect(
+    mut commands: Commands,
+    player_assets: If<Res<PlayerAssets>>,
+    mut step_query: Query<(&AnimationPlayer, &AnimationPlayerState), Changed<AnimationPlayerState>>,
+) {
+    for (player, state) in &mut step_query {
+        if player.animation.id() == player_assets.walk_anim.id()
+            && (state.frame_index() == 2 || state.frame_index() == 5)
+        {
+            let rng = &mut rand::rng();
+            let random_step = player_assets.steps.choose(rng).unwrap().clone();
+            commands.spawn(sound_effect(random_step));
+        }
+    }
 }
 
 fn update_player_camera_position(
@@ -114,10 +165,18 @@ pub struct PlayerAssets {
     ducky: Handle<Image>,
     #[dependency]
     pub steps: Vec<Handle<AudioSource>>,
+    pub idle_anim: Handle<Animation>,
+    pub walk_anim: Handle<Animation>,
+    pub fall_anim: Handle<Animation>,
 }
 
 impl FromWorld for PlayerAssets {
     fn from_world(world: &mut World) -> Self {
+        let mut animations = world.resource_mut::<Assets<Animation>>();
+        let idle_anim = animations.add(Animation::from_frame_range_and_millis(0..6, 500));
+        let walk_anim = animations.add(Animation::from_frame_range_and_millis(6..12, 50));
+        let fall_anim = animations.add(Animation::from_frame_range_and_millis(42..48, 300));
+
         let assets = world.resource::<AssetServer>();
         Self {
             ducky: assets.load("images/Hero_001.png"),
@@ -127,6 +186,9 @@ impl FromWorld for PlayerAssets {
                 assets.load("audio/sound_effects/step3.ogg"),
                 assets.load("audio/sound_effects/step4.ogg"),
             ],
+            idle_anim,
+            walk_anim,
+            fall_anim,
         }
     }
 }
