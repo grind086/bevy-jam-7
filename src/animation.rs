@@ -41,6 +41,10 @@ impl Animation {
         }
         self
     }
+
+    fn frame_markers(&self, frame: usize) -> &[usize] {
+        self.frames.get(frame).map_or(&[], |frame| &frame.markers)
+    }
 }
 
 #[derive(Reflect)]
@@ -100,9 +104,9 @@ impl AnimationPlayerState {
         self.timer.tick(delta).is_finished()
     }
 
-    fn go_to_next_frame<'a>(&mut self, animation: &'a Animation) -> &'a [usize] {
+    fn go_to_next_frame<'a>(&mut self, animation: &'a Animation) {
         if animation.frames.is_empty() {
-            return &[];
+            return;
         }
 
         let index = (self.frame_index + 1) % animation.frames.len();
@@ -111,8 +115,6 @@ impl AnimationPlayerState {
         self.frame_index = index;
         self.atlas_index = frame.index;
         self.timer = Timer::new(frame.duration, TimerMode::Once);
-
-        &frame.markers
     }
 }
 
@@ -133,7 +135,9 @@ fn update_animation_players(
         }
 
         if state.bypass_change_detection().tick(time.delta()) {
-            for &marker in state.go_to_next_frame(animation) {
+            state.go_to_next_frame(animation);
+
+            for &marker in animation.frame_markers(state.frame_index) {
                 commands.trigger(AnimationEvent { entity, marker });
             }
         }
