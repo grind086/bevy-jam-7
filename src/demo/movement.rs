@@ -25,21 +25,14 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-/// These are the movement parameters for our character controller.
-/// For now, this is only used for a single player, but it could power NPCs or
-/// other players as well.
 #[derive(Component, Reflect)]
 #[reflect(Component)]
 #[require(MovementIntent, OnGround)]
 pub struct MovementController {
-    /// Maximum speed in world units per second.
-    /// 1 world unit = 1 meter.
     pub max_speed: f32,
     pub air_speed: f32,
     pub jump_strength: f32,
     pub damping_factor: f32,
-
-    pub has_been_grounded: bool,
 }
 
 impl Default for MovementController {
@@ -49,7 +42,6 @@ impl Default for MovementController {
             air_speed: 0.1,
             jump_strength: 20.,
             damping_factor: 0.9,
-            has_been_grounded: true,
         }
     }
 }
@@ -90,30 +82,18 @@ fn update_grounded(
 }
 
 fn apply_movement(
-    mut movement_query: Query<(
-        &MovementIntent,
-        &mut MovementController,
-        Ref<OnGround>,
-        Forces,
-    )>,
+    mut movement_query: Query<(&MovementIntent, &MovementController, &OnGround, Forces)>,
 ) {
-    for (intent, mut controller, on_ground, mut forces) in &mut movement_query {
-        let velocity = if on_ground.0 {
+    for (intent, controller, on_ground, mut forces) in &mut movement_query {
+        let speed = if on_ground.0 {
             controller.max_speed
         } else {
             controller.air_speed
-        } * intent.direction;
-        forces.apply_local_linear_impulse(velocity * Vec2::X);
+        };
+        forces.apply_local_linear_impulse(speed * intent.direction * Vec2::X);
 
-        if on_ground.0 {
-            if on_ground.is_changed() {
-                controller.has_been_grounded = true;
-            }
-
-            if intent.jump && controller.has_been_grounded {
-                forces.apply_local_linear_impulse(controller.jump_strength * Vec2::Y);
-                controller.has_been_grounded = false;
-            }
+        if on_ground.0 && intent.jump {
+            forces.apply_local_linear_impulse(controller.jump_strength * Vec2::Y);
         }
     }
 }
