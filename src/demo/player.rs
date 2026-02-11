@@ -1,7 +1,7 @@
 //! Player-specific behavior.
 
 use avian2d::prelude::{Collider, LockedAxes, Mass, RigidBody, Sensor};
-use bevy::{ecs::relationship::RelatedSpawner, prelude::*};
+use bevy::{ecs::relationship::RelatedSpawner, prelude::*, ui_widgets::observe};
 use rand::seq::IndexedRandom;
 
 use crate::{
@@ -26,8 +26,7 @@ pub(super) fn plugin(app: &mut App) {
             .chain()
             .run_if(in_state(Screen::Gameplay))
             .in_set(PausableSystems),
-    )
-    .add_observer(trigger_step_sound_effect);
+    );
 
     // Update camera position
     app.add_systems(
@@ -59,7 +58,6 @@ pub fn player(
             ..default()
         },
         AnimationPlayer::from(player_assets.idle_anim.clone()),
-        Mass(1.5),
         Children::spawn(SpawnWith(|related: &mut RelatedSpawner<ChildOf>| {
             related.spawn((
                 Transform::from_translation(0.5 * Vec3::NEG_Y),
@@ -75,12 +73,13 @@ pub fn player(
         })),
         RigidBody::Dynamic,
         LockedAxes::ROTATION_LOCKED,
+        Mass(1.5),
         Transform::from_translation(position.extend(0.0)),
         MovementController {
             max_speed,
             ..default()
         },
-        // player_animation,
+        observe(trigger_step_sound_effect),
     )
 }
 
