@@ -6,6 +6,7 @@ use bevy::{
     prelude::*,
     sprite_render::{AlphaMode2d, TilemapChunk},
 };
+use rand::Rng;
 
 use crate::{
     PausableSystems,
@@ -27,7 +28,8 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.load_resource::<LevelAssets>().add_systems(
         Update,
-        update_enemy_animations
+        (update_enemy_intents, update_enemy_animations)
+            .chain()
             .run_if(in_state(Screen::Gameplay))
             .in_set(PausableSystems),
     );
@@ -204,6 +206,19 @@ fn enemies_vec(
             ))
         })
         .collect::<Vec<_>>()
+}
+
+fn update_enemy_intents(mut query: Query<&mut MovementIntent, With<EnemyHandle>>) {
+    for mut intent in &mut query {
+        if rand::rng().random_bool(0.01) {
+            intent.direction = if rand::rng().random_bool(0.5) {
+                1.0
+            } else {
+                -1.0
+            };
+        }
+        intent.jump = rand::rng().random_bool(0.01);
+    }
 }
 
 fn update_enemy_animations(
