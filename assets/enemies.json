@@ -1,6 +1,10 @@
 {
     "mushroom_head": {
         "name": "Mushroom Head",
+        "size": [
+            3,
+            3
+        ],
         "atlas": "images/enemies/Enemy_004.png",
         "atlas_layout": {
             "rows": 7,
@@ -22,9 +26,9 @@
                 "frame_millis": 50
             },
             "fall": {
-                "start": 12,
-                "end": 18,
-                "frame_millis": 300
+                "start": 24,
+                "end": 30,
+                "frame_millis": 100
             }
         },
         "collider": {
@@ -33,7 +37,7 @@
             "height": 0.2,
             "offset": [
                 0,
-                -0.666666
+                -1
             ]
         },
         "movement": {
