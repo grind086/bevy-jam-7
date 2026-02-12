@@ -9,7 +9,7 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-#[derive(EntityEvent)]
+#[derive(EntityEvent, Reflect)]
 pub struct AnimationEvent {
     #[event_target]
     pub entity: Entity,
@@ -104,7 +104,7 @@ impl AnimationPlayerState {
         self.timer.tick(delta).is_finished()
     }
 
-    fn go_to_next_frame<'a>(&mut self, animation: &'a Animation) {
+    fn go_to_next_frame(&mut self, animation: &Animation) {
         if animation.frames.is_empty() {
             return;
         }
