@@ -65,8 +65,8 @@ pub fn player(
                 max_speed,
                 ..default()
             },
-            // Collider::capsule(0.40, 0.2),
-            Collider::rectangle(0.8, 1.0),
+            Collider::capsule(0.35, 0.2),
+            // Collider::rectangle(0.8, 1.0),
             0.5 * Vec2::NEG_Y,
             CollisionLayers::player(),
         ),
@@ -91,7 +91,7 @@ fn record_player_directional_input(
     let rt = input.any_pressed([KeyCode::KeyD, KeyCode::ArrowRight]);
 
     intent.direction = (rt as i8 - lt as i8).into();
-    intent.jump = input.just_pressed(KeyCode::Space);
+    intent.jump = input.pressed(KeyCode::Space);
 }
 
 fn update_animation_movement(
