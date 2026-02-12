@@ -51,11 +51,11 @@ impl AssetLoader for EnemyManifestLoader {
         for (label, enemy_def) in manifest_toml.enemies {
             let handle = load_context.labeled_asset_scope(label.clone(), |ctx| {
                 let enemy = Enemy {
-                    name: label.clone(),
+                    name: enemy_def.name.clone(),
                     size: enemy_def.size,
                     atlas: ctx.load(enemy_def.atlas),
                     atlas_layout: ctx.add_labeled_asset(
-                        "layout".into(),
+                        format!("{label}_layout"),
                         TextureAtlasLayout::from_grid(
                             enemy_def.atlas_layout.size,
                             enemy_def.atlas_layout.cols,
@@ -64,11 +64,11 @@ impl AssetLoader for EnemyManifestLoader {
                             None,
                         ),
                     ),
-                    idle_anim: load_animation(ctx, &enemy_def.atlas_animations, "idle")
+                    idle_anim: load_animation(ctx, &label, &enemy_def.atlas_animations, "idle")
                         .ok_or("missing idle animation")?,
-                    walk_anim: load_animation(ctx, &enemy_def.atlas_animations, "walk")
+                    walk_anim: load_animation(ctx, &label, &enemy_def.atlas_animations, "walk")
                         .ok_or("missing walk animation")?,
-                    fall_anim: load_animation(ctx, &enemy_def.atlas_animations, "fall")
+                    fall_anim: load_animation(ctx, &label, &enemy_def.atlas_animations, "fall")
                         .ok_or("missing fall animation")?,
                     collider: enemy_def.collider.shape.into(),
                     collider_offset: enemy_def.collider.offset,
@@ -99,12 +99,13 @@ impl AssetLoader for EnemyManifestLoader {
 
 fn load_animation(
     ctx: &mut LoadContext<'_>,
-    anims: &HashMap<String, de::EnemyAnimation>,
+    label: &str,
+    atlas_animations: &HashMap<String, de::EnemyAnimation>,
     name: &str,
 ) -> Option<Handle<Animation>> {
-    anims.get(name).map(|anim| {
+    atlas_animations.get(name).map(|anim| {
         ctx.add_labeled_asset(
-            format!("{name}_anim"),
+            format!("{label}_{name}_anim"),
             Animation::from_frame_range_and_millis(anim.start..anim.end, anim.frame_millis.into()),
         )
     })
