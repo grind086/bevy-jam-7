@@ -51,7 +51,7 @@ pub fn movement_controller(
     )
 }
 
-#[derive(Component, Reflect, Debug)]
+#[derive(Component, Reflect, Debug, Clone)]
 #[reflect(Component)]
 #[require(MovementIntent, GroundNormal)]
 pub struct MovementController {

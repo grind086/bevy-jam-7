@@ -27,6 +27,7 @@ pub struct Level {
     pub grid_size: UVec2,
     pub grid_offset: IVec2,
     pub player_spawn: IVec2,
+    pub enemy_spawns: Vec<EnemySpawn>,
     pub terrain_tileset: Handle<Image>,
     pub terrain_tiledata: TilemapChunkTileData,
     pub terrain_colliders: Vec<LevelCollider>,
@@ -43,6 +44,12 @@ impl Level {
     pub fn center_position(&self) -> Vec2 {
         self.bounds().as_rect().center()
     }
+}
+
+#[derive(Reflect)]
+pub struct EnemySpawn {
+    pub label: String,
+    pub position: IVec2,
 }
 
 #[derive(TypePath, Default)]
@@ -73,6 +80,16 @@ impl AssetLoader for LevelLoader {
             (entities_layer.c_hei - player_spawn_entity.grid[1] - 1) as _,
         );
 
+        let enemy_spawns = iter_enemies(entities_layer)
+            .map(|(label, def)| EnemySpawn {
+                label: label.to_lowercase(),
+                position: IVec2::new(
+                    def.grid[0] as _,
+                    (entities_layer.c_hei - def.grid[1] - 1) as _,
+                ),
+            })
+            .collect();
+
         let terrain_layer = get_named_layer(&ldtk, "Terrain").unwrap();
 
         let grid_size = UVec2::new(terrain_layer.c_wid as _, terrain_layer.c_hei as _);
@@ -97,6 +114,7 @@ impl AssetLoader for LevelLoader {
             grid_size,
             grid_offset: level_offset,
             player_spawn,
+            enemy_spawns,
             terrain_tileset,
             terrain_tiledata,
             terrain_colliders,
@@ -121,6 +139,33 @@ fn get_named_entity<'a>(layer: &'a LdtkLayer, name: &str) -> Option<&'a LdtkEnti
         .entity_instances
         .iter()
         .find(|entity| entity.identifier == name)
+}
+
+fn iter_named_entities<'a>(
+    layer: &'a LdtkLayer,
+    name: &str,
+) -> impl Iterator<Item = &'a LdtkEntity> {
+    layer
+        .entity_instances
+        .iter()
+        .filter(move |entity| entity.identifier == name)
+}
+
+fn iter_enemies(layer: &LdtkLayer) -> impl Iterator<Item = (&str, &LdtkEntity)> {
+    iter_named_entities(layer, "Enemy").filter_map(|entity| {
+        entity
+            .field_instances
+            .iter()
+            .find_map(|field| {
+                if field.identifier == "Type" && field.field_instance_type == "LocalEnum.EnemyType"
+                {
+                    field.value.as_ref().and_then(|v| v.as_str())
+                } else {
+                    None
+                }
+            })
+            .map(|ty| (ty, entity))
+    })
 }
 
 #[derive(Debug, Error)]

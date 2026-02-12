@@ -15,6 +15,7 @@ pub struct EnemyManifest {
 #[derive(Serialize, Deserialize)]
 pub struct Enemy {
     pub name: String,
+    pub size: Vec2,
     pub atlas: AssetPath<'static>,
     pub atlas_layout: EnemyAtlasLayout,
     pub atlas_animations: HashMap<String, EnemyAnimation>,

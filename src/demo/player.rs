@@ -96,31 +96,34 @@ fn record_player_directional_input(
 
 fn update_animation_movement(
     assets: Res<PlayerAssets>,
-    mut player_query: Query<(
-        &MovementIntent,
-        Option<&GroundNormal>,
-        &mut Sprite,
-        &mut AnimationPlayer,
-    )>,
+    player: Single<
+        (
+            &MovementIntent,
+            Option<&GroundNormal>,
+            &mut Sprite,
+            &mut AnimationPlayer,
+        ),
+        With<Player>,
+    >,
 ) {
-    for (intent, ground_norm, mut sprite, mut animation) in &mut player_query {
-        if intent.direction != 0.0 {
-            sprite.flip_x = intent.direction < 0.0;
-        }
+    let (intent, ground_norm, mut sprite, mut animation) = player.into_inner();
 
-        let next_anim = if ground_norm.is_none_or(GroundNormal::is_grounded) {
-            if intent.direction == 0.0 {
-                &assets.idle_anim
-            } else {
-                &assets.walk_anim
-            }
+    if intent.direction != 0.0 {
+        sprite.flip_x = intent.direction < 0.0;
+    }
+
+    let next_anim = if ground_norm.is_none_or(GroundNormal::is_grounded) {
+        if intent.direction == 0.0 {
+            &assets.idle_anim
         } else {
-            &assets.fall_anim
-        };
-
-        if next_anim.id() != animation.animation.id() {
-            animation.animation = next_anim.clone();
+            &assets.walk_anim
         }
+    } else {
+        &assets.fall_anim
+    };
+
+    if next_anim.id() != animation.animation.id() {
+        animation.animation = next_anim.clone();
     }
 }
 

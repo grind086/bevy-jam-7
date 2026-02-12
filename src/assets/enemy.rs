@@ -12,6 +12,7 @@ use crate::{
 #[derive(Asset, Reflect, Debug)]
 pub struct Enemy {
     pub name: String,
+    pub size: Vec2,
     pub atlas: Handle<Image>,
     pub atlas_layout: Handle<TextureAtlasLayout>,
     pub idle_anim: Handle<Animation>,
@@ -51,6 +52,7 @@ impl AssetLoader for EnemyManifestLoader {
             let handle = load_context.labeled_asset_scope(label.clone(), |ctx| {
                 let enemy = Enemy {
                     name: label.clone(),
+                    size: enemy_def.size,
                     atlas: ctx.load(enemy_def.atlas),
                     atlas_layout: ctx.add_labeled_asset(
                         "layout".into(),

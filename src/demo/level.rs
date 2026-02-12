@@ -8,16 +8,29 @@ use bevy::{
 };
 
 use crate::{
+    PausableSystems,
+    animation::AnimationPlayer,
     asset_tracking::LoadResource,
-    assets::level::Level,
+    assets::{
+        enemy::{Enemy, EnemyManifest},
+        level::Level,
+    },
     audio::music,
-    demo::player::{PlayerAssets, player},
+    demo::{
+        movement::{GroundNormal, MovementIntent, movement_controller},
+        player::{PlayerAssets, player},
+    },
     physics::{GamePhysicsLayersExt, LorentzFactor},
     screens::Screen,
 };
 
 pub(super) fn plugin(app: &mut App) {
-    app.load_resource::<LevelAssets>();
+    app.load_resource::<LevelAssets>().add_systems(
+        Update,
+        update_enemy_animations
+            .run_if(in_state(Screen::Gameplay))
+            .in_set(PausableSystems),
+    );
 
     #[cfg(feature = "dev_native")]
     {
@@ -32,6 +45,8 @@ pub struct LevelAssets {
     music: Handle<AudioSource>,
     #[dependency]
     level: Handle<Level>,
+    #[dependency]
+    enemies: Handle<EnemyManifest>,
 }
 
 impl FromWorld for LevelAssets {
@@ -40,6 +55,7 @@ impl FromWorld for LevelAssets {
         Self {
             music: assets.load("audio/music/Fluffing A Duck.ogg"),
             level: assets.load("test/Level_0.ldtkl"),
+            enemies: assets.load("enemies.json"),
         }
     }
 }
@@ -56,9 +72,12 @@ pub fn spawn_level(
     level_assets: Res<LevelAssets>,
     player_assets: Res<PlayerAssets>,
     levels: Res<Assets<Level>>,
+    enemy_manifest: Res<Assets<EnemyManifest>>,
+    enemies: Res<Assets<Enemy>>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     let level = levels.get(&level_assets.level).unwrap();
+    let enemy_manifest = enemy_manifest.get(&level_assets.enemies).unwrap();
     commands
         .spawn((
             Name::new("Level"),
@@ -77,6 +96,14 @@ pub fn spawn_level(
                     Name::new("Gameplay Music"),
                     music(level_assets.music.clone())
                 ),
+                (
+                    Name::new("Enemies"),
+                    Transform::default(),
+                    Visibility::default(),
+                    Children::spawn(SpawnIter(
+                        enemies_vec(&enemy_manifest, &enemies, level).into_iter()
+                    ))
+                )
             ],
         ))
         .with_children(|children| {
@@ -130,6 +157,88 @@ fn colliders_batch(
             )
         })
         .collect()
+}
+
+#[derive(Component)]
+pub struct EnemyHandle(Handle<Enemy>);
+
+fn enemies_vec(
+    enemy_manifest: &EnemyManifest,
+    enemies: &Assets<Enemy>,
+    level: &Level,
+) -> Vec<impl Bundle> {
+    level
+        .enemy_spawns
+        .iter()
+        .filter_map(|spawn| {
+            let Some(handle) = enemy_manifest.enemies.get(&spawn.label) else {
+                warn!("Unknown enemy label: {:?}", spawn.label);
+                return None;
+            };
+
+            let enemy = enemies.get(handle)?;
+            Some((
+                Name::new(format!("Enemy: {}", enemy.name)),
+                EnemyHandle(handle.clone()),
+                Sprite {
+                    image: enemy.atlas.clone(),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: enemy.atlas_layout.clone(),
+                        index: 0,
+                    }),
+                    custom_size: Some(enemy.size),
+                    ..default()
+                },
+                AnimationPlayer::from(enemy.idle_anim.clone()),
+                Transform::from_translation(spawn.position.as_vec2().extend(0.0)),
+                movement_controller(
+                    enemy.movement.clone(),
+                    enemy.collider.clone(),
+                    enemy.collider_offset,
+                    CollisionLayers::enemy(),
+                ),
+                MovementIntent {
+                    direction: 1.0,
+                    jump: true,
+                },
+            ))
+        })
+        .collect::<Vec<_>>()
+}
+
+fn update_enemy_animations(
+    assets: Res<Assets<Enemy>>,
+    mut player_query: Query<(
+        &EnemyHandle,
+        &MovementIntent,
+        Option<&GroundNormal>,
+        &mut Sprite,
+        &mut AnimationPlayer,
+    )>,
+) {
+    for (handle, intent, ground_norm, mut sprite, mut animation) in &mut player_query {
+        let Some(enemy) = assets.get(&handle.0) else {
+            continue;
+        };
+
+        if intent.direction != 0.0 {
+            sprite.flip_x = intent.direction < 0.0;
+        }
+
+        let next_anim = if ground_norm.is_none_or(GroundNormal::is_grounded) {
+            if intent.direction == 0.0 {
+                &enemy.idle_anim
+            } else {
+                &enemy.walk_anim
+            }
+        } else {
+            &enemy.fall_anim
+        };
+
+        if next_anim.id() != animation.animation.id() {
+            animation.animation = next_anim.clone();
+        }
+    }
 }
 
 #[cfg(feature = "dev_native")]

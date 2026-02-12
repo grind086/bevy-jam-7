@@ -16,7 +16,7 @@ pub struct AnimationEvent {
     pub marker: usize,
 }
 
-#[derive(Asset, Reflect)]
+#[derive(Asset, Reflect, Debug)]
 pub struct Animation {
     pub frames: Vec<Frame>,
 }
@@ -47,7 +47,7 @@ impl Animation {
     }
 }
 
-#[derive(Reflect)]
+#[derive(Reflect, Debug)]
 pub struct Frame {
     pub index: usize,
     pub duration: Duration,
