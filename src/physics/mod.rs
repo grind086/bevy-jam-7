@@ -10,6 +10,10 @@ use crate::demo::{
     player::{Player, PlayerCamera},
 };
 
+mod layers;
+
+pub use layers::*;
+
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(PhysicsPlugins::default())
         .init_resource::<LorentzClamp>()
@@ -54,7 +58,7 @@ pub struct LorentzFactor {
 impl LorentzFactor {
     fn new(v: Vec2, c: SpeedOfLight, clamp: LorentzClamp) -> Self {
         let (dir, speed) = v.normalize_and_length();
-        let b = speed.min(c.0) / c.0;
+        let b = speed.min(c.0 * 0.999) / c.0;
         let g = 1.0 / (1.0 - b.powi(2)).sqrt();
         let g = g.clamp(1.0, clamp.0);
         Self {
