@@ -1,7 +1,7 @@
 //! Player-specific behavior.
 
-use avian2d::prelude::{Collider, LockedAxes, Mass, RigidBody, Sensor};
-use bevy::{ecs::relationship::RelatedSpawner, prelude::*, ui_widgets::observe};
+use avian2d::prelude::{Collider, CollisionLayers};
+use bevy::{prelude::*, ui_widgets::observe};
 use rand::seq::IndexedRandom;
 
 use crate::{
@@ -9,7 +9,8 @@ use crate::{
     animation::{Animation, AnimationEvent, AnimationPlayer},
     asset_tracking::LoadResource,
     audio::sound_effect,
-    demo::movement::{FootSensorOf, MovementController, MovementIntent, OnGround},
+    demo::movement::{MovementController, MovementIntent, OnGround, movement_controller},
+    physics::GamePhysicsLayersExt,
     screens::Screen,
 };
 
@@ -58,27 +59,17 @@ pub fn player(
             ..default()
         },
         AnimationPlayer::from(player_assets.idle_anim.clone()),
-        Children::spawn(SpawnWith(|related: &mut RelatedSpawner<ChildOf>| {
-            related.spawn((
-                Transform::from_translation(0.5 * Vec3::NEG_Y),
-                // Collider::capsule(0.40, 0.2),
-                Collider::rectangle(0.8, 1.0),
-            ));
-            related.spawn((
-                Sensor,
-                FootSensorOf(related.target_entity()),
-                Transform::from_translation(1.0 * Vec3::NEG_Y),
-                Collider::rectangle(0.70, 0.1),
-            ));
-        })),
-        RigidBody::Dynamic,
-        LockedAxes::ROTATION_LOCKED,
-        Mass(1.5),
         Transform::from_translation(position.extend(0.0)),
-        MovementController {
-            max_speed,
-            ..default()
-        },
+        movement_controller(
+            MovementController {
+                max_speed,
+                ..default()
+            },
+            // Collider::capsule(0.40, 0.2),
+            Collider::rectangle(0.8, 1.0),
+            0.5 * Vec2::NEG_Y,
+            CollisionLayers::player(),
+        ),
         observe(trigger_step_sound_effect),
     )
 }

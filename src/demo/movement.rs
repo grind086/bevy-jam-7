@@ -13,16 +13,42 @@
 //! purposes. If you want to move the player in a smoother way,
 //! consider using a [fixed timestep](https://github.com/bevyengine/bevy/blob/main/examples/movement/physics_in_fixed_timestep.rs).
 
-use avian2d::prelude::{Collisions, Forces, LinearVelocity, WriteRigidBodyForces};
+use avian2d::prelude::*;
 use bevy::prelude::*;
 
-use crate::PausableSystems;
+use crate::{PausableSystems, physics::GamePhysicsLayers};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(
-        FixedUpdate,
-        (update_grounded, apply_movement, apply_movement_damping).in_set(PausableSystems),
-    );
+    app.add_systems(FixedPreUpdate, update_grounded_caster_scales)
+        .add_systems(
+            FixedUpdate,
+            (update_grounded, apply_movement, apply_movement_damping)
+                .chain()
+                .in_set(PausableSystems),
+        );
+}
+
+pub fn movement_controller(
+    config: MovementController,
+    collider: Collider,
+    offset: Vec2,
+    layers: CollisionLayers,
+) -> impl Bundle {
+    (
+        config,
+        Mass(1.5),
+        RigidBody::Dynamic,
+        LockedAxes::ROTATION_LOCKED,
+        OnGround::default(),
+        ShapeCaster::new(collider.clone(), offset, 0.0, Dir2::NEG_Y).with_query_filter(
+            SpatialQueryFilter::from_mask(GamePhysicsLayers::LevelGeometry),
+        ),
+        children![(
+            layers,
+            collider,
+            Transform::from_translation(offset.extend(0.0))
+        )],
+    )
 }
 
 #[derive(Component, Reflect)]
@@ -57,27 +83,20 @@ pub struct MovementIntent {
 #[reflect(Component)]
 pub struct OnGround(bool);
 
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-#[relationship_target(relationship = FootSensorOf)]
-pub struct FootSensor(Entity);
-
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-#[relationship(relationship_target = FootSensor)]
-pub struct FootSensorOf(pub Entity);
-
-fn update_grounded(
-    collisions: Collisions,
-    mut controllers: Query<(Entity, &FootSensor, &mut OnGround)>,
+fn update_grounded_caster_scales(
+    mut query: Query<(&GlobalTransform, &mut ShapeCaster), With<OnGround>>,
 ) {
-    for (entity, foot_sensor, mut on_ground) in &mut controllers {
-        on_ground.set_if_neq(OnGround(
-            collisions
-                .entities_colliding_with(foot_sensor.0)
-                .find(|e| *e != entity)
-                .is_some(),
-        ));
+    for (transform, mut caster) in &mut query {
+        caster.shape.set_scale(0.9 * transform.scale().xy(), 10);
+        caster.max_distance = 0.1 * transform.scale().y;
+    }
+}
+
+fn update_grounded(mut controllers: Query<(&ShapeHits, &mut OnGround)>) {
+    for (hits, mut on_ground) in &mut controllers {
+        on_ground.0 = hits
+            .iter()
+            .any(|hit| hit.normal1.angle_to(Vec2::Y).abs() < f32::to_radians(45.0));
     }
 }
 
