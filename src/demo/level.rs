@@ -1,6 +1,6 @@
 //! Spawn the main level.
 
-use avian2d::prelude::RigidBody;
+use avian2d::prelude::{CollisionLayers, RigidBody};
 use bevy::{
     ecs::bundle::NoBundleEffect,
     prelude::*,
@@ -12,7 +12,7 @@ use crate::{
     assets::level::Level,
     audio::music,
     demo::player::{PlayerAssets, player},
-    physics::LorentzFactor,
+    physics::{GamePhysicsLayersExt, LorentzFactor},
     screens::Screen,
 };
 
@@ -124,6 +124,7 @@ fn colliders_batch(
                 Name::new("Terrain Collider"),
                 ChildOf(level_geometry),
                 RigidBody::Static,
+                CollisionLayers::level_geometry(),
                 collider,
                 transform,
             )
