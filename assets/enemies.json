@@ -1,0 +1,47 @@
+{
+    "mushroom_head": {
+        "name": "Mushroom Head",
+        "atlas": "images/enemies/Enemy_004.png",
+        "atlas_layout": {
+            "rows": 7,
+            "cols": 6,
+            "size": [
+                48,
+                48
+            ]
+        },
+        "atlas_animations": {
+            "idle": {
+                "start": 0,
+                "end": 6,
+                "frame_millis": 500
+            },
+            "walk": {
+                "start": 6,
+                "end": 12,
+                "frame_millis": 50
+            },
+            "fall": {
+                "start": 12,
+                "end": 18,
+                "frame_millis": 300
+            }
+        },
+        "collider": {
+            "shape": "Capsule",
+            "radius": 0.35,
+            "height": 0.2,
+            "offset": [
+                0,
+                -0.666666
+            ]
+        },
+        "movement": {
+            "max_speed": 1,
+            "air_speed": 0.1,
+            "jump_strength": 5,
+            "damping_factor": 0.9,
+            "max_slope_angle": 1.134464
+        }
+    }
+}
