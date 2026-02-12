@@ -103,7 +103,7 @@ pub fn spawn_level(
                     Transform::default(),
                     Visibility::default(),
                     Children::spawn(SpawnIter(
-                        enemies_vec(&enemy_manifest, &enemies, level).into_iter()
+                        enemies_vec(enemy_manifest, &enemies, level).into_iter()
                     ))
                 )
             ],
@@ -161,7 +161,8 @@ fn colliders_batch(
         .collect()
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct EnemyHandle(Handle<Enemy>);
 
 fn enemies_vec(
