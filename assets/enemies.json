@@ -26,8 +26,8 @@
                 "frame_millis": 50
             },
             "fall": {
-                "start": 24,
-                "end": 30,
+                "start": 18,
+                "end": 24,
                 "frame_millis": 100
             }
         },
@@ -38,6 +38,55 @@
             "offset": [
                 0,
                 -1
+            ]
+        },
+        "movement": {
+            "max_speed": 1,
+            "air_speed": 0.1,
+            "jump_strength": 5,
+            "damping_factor": 0.9,
+            "max_slope_angle": 1.134464
+        }
+    },
+    "bitey": {
+        "name": "Bitey",
+        "size": [
+            2,
+            2
+        ],
+        "atlas": "images/enemies/Enemy_008.png",
+        "atlas_layout": {
+            "rows": 7,
+            "cols": 6,
+            "size": [
+                32,
+                32
+            ]
+        },
+        "atlas_animations": {
+            "idle": {
+                "start": 0,
+                "end": 6,
+                "frame_millis": 500
+            },
+            "walk": {
+                "start": 6,
+                "end": 12,
+                "frame_millis": 50
+            },
+            "fall": {
+                "start": 18,
+                "end": 24,
+                "frame_millis": 100
+            }
+        },
+        "collider": {
+            "shape": "Capsule",
+            "radius": 0.35,
+            "height": 0.3,
+            "offset": [
+                0,
+                -0.5
             ]
         },
         "movement": {
