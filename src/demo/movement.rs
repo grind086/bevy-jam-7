@@ -39,7 +39,7 @@ pub fn movement_controller(
         Mass(1.5),
         RigidBody::Dynamic,
         LockedAxes::ROTATION_LOCKED,
-        OnGround::default(),
+        GroundNormal::default(),
         ShapeCaster::new(collider.clone(), offset, 0.0, Dir2::NEG_Y).with_query_filter(
             SpatialQueryFilter::from_mask(GamePhysicsLayers::LevelGeometry),
         ),
@@ -53,7 +53,7 @@ pub fn movement_controller(
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
-#[require(MovementIntent, OnGround)]
+#[require(MovementIntent, GroundNormal)]
 pub struct MovementController {
     pub max_speed: f32,
     pub air_speed: f32,
@@ -81,12 +81,18 @@ pub struct MovementIntent {
     pub jump: bool,
 }
 
-#[derive(Component, Reflect, Default, Deref, Clone, Copy, PartialEq, Eq)]
+#[derive(Component, Reflect, Default, Deref, Clone, Copy, PartialEq)]
 #[reflect(Component)]
-pub struct OnGround(bool);
+pub struct GroundNormal(Option<Vec2>);
+
+impl GroundNormal {
+    pub fn is_grounded(&self) -> bool {
+        self.0.is_some()
+    }
+}
 
 fn update_grounded_caster_scales(
-    mut query: Query<(&GlobalTransform, &mut ShapeCaster), With<OnGround>>,
+    mut query: Query<(&GlobalTransform, &mut ShapeCaster), With<MovementController>>,
 ) {
     for (transform, mut caster) in &mut query {
         caster.shape.set_scale(0.9 * transform.scale().xy(), 10);
@@ -94,27 +100,30 @@ fn update_grounded_caster_scales(
     }
 }
 
-fn update_grounded(mut controllers: Query<(&MovementController, &ShapeHits, &mut OnGround)>) {
-    for (controller, hits, mut on_ground) in &mut controllers {
-        on_ground.0 = hits
+fn update_grounded(mut controllers: Query<(&MovementController, &ShapeHits, &mut GroundNormal)>) {
+    for (controller, hits, mut ground_norm) in &mut controllers {
+        ground_norm.0 = hits
             .iter()
-            .any(|hit| hit.normal1.angle_to(Vec2::Y).abs() < controller.max_slope_angle);
+            .find(|hit| hit.normal1.angle_to(Vec2::Y).abs() < controller.max_slope_angle)
+            .map(|hit| hit.normal1);
     }
 }
 
 fn apply_movement(
-    mut movement_query: Query<(&MovementIntent, &MovementController, &OnGround, Forces)>,
+    mut movement_query: Query<(&MovementIntent, &MovementController, &GroundNormal, Forces)>,
 ) {
-    for (intent, controller, on_ground, mut forces) in &mut movement_query {
-        let speed = if on_ground.0 {
+    for (intent, controller, ground_norm, mut forces) in &mut movement_query {
+        let speed = if ground_norm.is_grounded() {
             controller.max_speed
         } else {
             controller.air_speed
         };
         forces.apply_local_linear_impulse(speed * intent.direction * Vec2::X);
 
-        if on_ground.0 && intent.jump {
-            forces.apply_local_linear_impulse(controller.jump_strength * Vec2::Y);
+        if let Some(normal) = ground_norm.0
+            && intent.jump
+        {
+            forces.apply_local_linear_impulse(controller.jump_strength * normal);
         }
     }
 }

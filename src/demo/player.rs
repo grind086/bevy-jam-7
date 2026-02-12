@@ -9,7 +9,7 @@ use crate::{
     animation::{Animation, AnimationEvent, AnimationPlayer},
     asset_tracking::LoadResource,
     audio::sound_effect,
-    demo::movement::{MovementController, MovementIntent, OnGround, movement_controller},
+    demo::movement::{GroundNormal, MovementController, MovementIntent, movement_controller},
     physics::GamePhysicsLayersExt,
     screens::Screen,
 };
@@ -98,17 +98,17 @@ fn update_animation_movement(
     assets: Res<PlayerAssets>,
     mut player_query: Query<(
         &MovementIntent,
-        Option<&OnGround>,
+        Option<&GroundNormal>,
         &mut Sprite,
         &mut AnimationPlayer,
     )>,
 ) {
-    for (intent, on_ground, mut sprite, mut animation) in &mut player_query {
+    for (intent, ground_norm, mut sprite, mut animation) in &mut player_query {
         if intent.direction != 0.0 {
             sprite.flip_x = intent.direction < 0.0;
         }
 
-        let next_anim = if on_ground.is_none_or(|g| **g) {
+        let next_anim = if ground_norm.is_none_or(GroundNormal::is_grounded) {
             if intent.direction == 0.0 {
                 &assets.idle_anim
             } else {
