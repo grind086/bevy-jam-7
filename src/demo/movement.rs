@@ -59,6 +59,7 @@ pub struct MovementController {
     pub air_speed: f32,
     pub jump_strength: f32,
     pub damping_factor: f32,
+    pub max_slope_angle: f32,
 }
 
 impl Default for MovementController {
@@ -68,6 +69,7 @@ impl Default for MovementController {
             air_speed: 0.1,
             jump_strength: 20.,
             damping_factor: 0.9,
+            max_slope_angle: f32::to_radians(45.0),
         }
     }
 }
@@ -92,11 +94,11 @@ fn update_grounded_caster_scales(
     }
 }
 
-fn update_grounded(mut controllers: Query<(&ShapeHits, &mut OnGround)>) {
-    for (hits, mut on_ground) in &mut controllers {
+fn update_grounded(mut controllers: Query<(&MovementController, &ShapeHits, &mut OnGround)>) {
+    for (controller, hits, mut on_ground) in &mut controllers {
         on_ground.0 = hits
             .iter()
-            .any(|hit| hit.normal1.angle_to(Vec2::Y).abs() < f32::to_radians(45.0));
+            .any(|hit| hit.normal1.angle_to(Vec2::Y).abs() < controller.max_slope_angle);
     }
 }
 
