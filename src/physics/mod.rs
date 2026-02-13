@@ -28,6 +28,10 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
+// TODO: Either refactor this to actually just be player vs level geometry using resources, or
+// actually figure out how to do collision for (non-physical) multi-target scaling. One collider
+// for the level frame and one (+sprite) for the player frame, with a proper frame "ghost"?
+
 #[derive(Resource, Reflect, Deref, Clone, Copy, PartialEq, PartialOrd)]
 #[reflect(Resource)]
 pub struct SpeedOfLight(pub f32);
