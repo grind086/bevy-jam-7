@@ -39,7 +39,6 @@ pub(super) fn plugin(app: &mut App) {
 /// The player character.
 pub fn player(
     position: Vec2,
-    max_speed: f32,
     player_assets: &PlayerAssets,
     texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
 ) -> impl Bundle {
@@ -64,7 +63,13 @@ pub fn player(
         Transform::from_translation((position - collider_offset).extend(0.0)),
         movement_controller(
             MovementController {
-                max_speed,
+                max_speed: 20.,
+                accel_ground: 1.5,
+                accel_air: 0.1,
+                jump_strength: 20.,
+                damping_factor_air: 0.3,
+                damping_factor_ground: 2.5,
+                max_slope_angle: f32::to_radians(60.0),
                 ..default()
             },
             Collider::capsule(0.35, 0.2),

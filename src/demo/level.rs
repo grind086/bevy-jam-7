@@ -90,7 +90,6 @@ pub fn spawn_level(
             children![
                 player(
                     level.player_spawn,
-                    1.0,
                     &player_assets,
                     &mut texture_atlas_layouts
                 ),
