@@ -1,6 +1,6 @@
 //! Player-specific behavior.
 
-use avian2d::prelude::{Collider, CollisionLayers};
+use avian2d::prelude::{Collider, CollisionLayers, LinearVelocity};
 use bevy::{prelude::*, ui_widgets::observe};
 use rand::{Rng, seq::IndexedRandom};
 
@@ -42,7 +42,8 @@ pub fn player(
     player_assets: &PlayerAssets,
     texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
 ) -> impl Bundle {
-    let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 6, 12, None, None);
+    let layout =
+        TextureAtlasLayout::from_grid(UVec2::splat(32), 4, 4, Some(UVec2::ONE), Some(UVec2::ONE));
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     let collider_offset = 0.5 * Vec2::NEG_Y;
@@ -71,7 +72,7 @@ pub fn player(
                 damping_factor_ground: 2.5,
                 max_slope_angle: f32::to_radians(60.0),
             },
-            Collider::capsule(0.35, 0.2),
+            Collider::capsule(0.2, 0.4),
             // Collider::rectangle(0.8, 1.0),
             collider_offset,
             CollisionLayers::player(),
@@ -106,13 +107,14 @@ fn update_animation_movement(
         (
             &MovementIntent,
             Option<&GroundNormal>,
+            Option<&LinearVelocity>,
             &mut Sprite,
             &mut AnimationPlayer,
         ),
         With<Player>,
     >,
 ) {
-    let (intent, ground_norm, mut sprite, mut animation) = player.into_inner();
+    let (intent, ground_norm, velocity, mut sprite, mut animation) = player.into_inner();
 
     if intent.direction != 0.0 {
         sprite.flip_x = intent.direction < 0.0;
@@ -125,7 +127,14 @@ fn update_animation_movement(
             &assets.walk_anim
         }
     } else {
-        &assets.fall_anim
+        let v = velocity.map_or(-1.0, |v| v.y);
+        if v.abs() < 0.5 {
+            &assets.peak_anim
+        } else if v > 0.0 {
+            &assets.jump_anim
+        } else {
+            &assets.fall_anim
+        }
     };
 
     if next_anim.id() != animation.animation.id() {
@@ -163,6 +172,8 @@ pub struct PlayerAssets {
     pub steps: Vec<Handle<AudioSource>>,
     pub idle_anim: Handle<Animation>,
     pub walk_anim: Handle<Animation>,
+    pub jump_anim: Handle<Animation>,
+    pub peak_anim: Handle<Animation>,
     pub fall_anim: Handle<Animation>,
 }
 
@@ -173,16 +184,19 @@ impl PlayerAssets {
 impl FromWorld for PlayerAssets {
     fn from_world(world: &mut World) -> Self {
         let mut animations = world.resource_mut::<Assets<Animation>>();
-        let idle_anim = animations.add(Animation::from_frame_range_and_millis(0..6, 500));
+        let idle_anim = animations.add(Animation::from_frame_range_and_millis(0..4, 250));
         let walk_anim = animations.add(
-            Animation::from_frame_range_and_millis(6..12, 50)
-                .with_marker(Self::STEP_MARKER, [2, 5]),
+            Animation::from_frame_range_and_millis(4..12, 50)
+                .with_marker(Self::STEP_MARKER, [3, 7]),
         );
-        let fall_anim = animations.add(Animation::from_frame_range_and_millis(42..48, 300));
+
+        let jump_anim = animations.add(Animation::from_frame_range_and_millis(12..13, 50));
+        let peak_anim = animations.add(Animation::from_frame_range_and_millis(13..14, 50));
+        let fall_anim = animations.add(Animation::from_frame_range_and_millis(14..15, 50));
 
         let assets = world.resource::<AssetServer>();
         Self {
-            ducky: assets.load("images/Hero_001.png"),
+            ducky: assets.load("images/player.png"),
             steps: vec![
                 assets.load("audio/sound_effects/steps/grass1.ogg"),
                 assets.load("audio/sound_effects/steps/grass2.ogg"),
@@ -193,6 +207,8 @@ impl FromWorld for PlayerAssets {
             ],
             idle_anim,
             walk_anim,
+            jump_anim,
+            peak_anim,
             fall_anim,
         }
     }
