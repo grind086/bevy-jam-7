@@ -16,7 +16,6 @@ pub use layers::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(PhysicsPlugins::default())
-        .init_resource::<LorentzClamp>()
         .insert_resource(SpeedOfLight(25.0));
 
     app.add_systems(
@@ -39,69 +38,33 @@ impl Default for SpeedOfLight {
     }
 }
 
-#[derive(Resource, Reflect, Deref, Clone, Copy, PartialEq, PartialOrd)]
-#[reflect(Resource)]
-pub struct LorentzClamp(pub f32);
-
-impl Default for LorentzClamp {
-    fn default() -> Self {
-        Self(10.0)
-    }
-}
-
 #[derive(Component, Reflect)]
-pub struct LorentzFactor {
-    scalar: f32,
-    vector: Vec2,
-}
-
-impl LorentzFactor {
-    fn new(v: Vec2, c: SpeedOfLight, clamp: LorentzClamp) -> Self {
-        let (dir, speed) = v.normalize_and_length();
-        let b = speed.min(c.0 * 0.999) / c.0;
-        let g = 1.0 / (1.0 - b.powi(2)).sqrt();
-        let g = g.clamp(1.0, clamp.0);
-        Self {
-            scalar: g,
-            vector: ((g - 1.) * dir).abs() + 1.,
-        }
-    }
-
-    // pub fn is_finite(&self) -> bool {
-    //     self.scalar.is_finite()
-    // }
-
-    // pub fn is_unit(&self) -> bool {
-    //     self.scalar == 1.0
-    // }
-
-    // pub fn scalar(&self) -> f32 {
-    //     self.scalar
-    // }
-
-    pub fn vector(&self) -> Vec2 {
-        self.vector
-    }
-}
+pub struct LorentzFactor(pub Vec2);
 
 impl Default for LorentzFactor {
     fn default() -> Self {
-        Self {
-            scalar: 1.0,
-            vector: Vec2::ONE,
-        }
+        Self(Vec2::ONE)
     }
 }
 
+fn gamma(s: f32, c: f32) -> f32 {
+    let b = s.abs().min(c * 0.999) / c;
+    1.0 / (1.0 - b * b).sqrt()
+}
+
 fn update_lorentz_factors(
+    time: Res<Time>,
     c: Res<SpeedOfLight>,
-    clamp: Res<LorentzClamp>,
     player_vel: Single<&LinearVelocity, With<Player>>,
     mut velocities: Query<(&LinearVelocity, &mut LorentzFactor)>,
 ) {
-    for (target_vel, mut gamma) in &mut velocities {
-        let relative_vel = player_vel.0 - target_vel.0;
-        *gamma = LorentzFactor::new(relative_vel, *c, *clamp);
+    for (target_vel, mut lorentz) in &mut velocities {
+        let v = player_vel.0 - target_vel.0;
+        let g = Vec2::new(gamma(v.x, c.0), gamma(v.y, c.0));
+        lorentz.0 = lorentz.0.lerp(g, (4.0 * time.delta_secs()).min(1.0));
+        if lorentz.0.y - 1.0 < 0.01 {
+            lorentz.0.y = 1.0;
+        }
     }
 }
 
@@ -115,19 +78,21 @@ fn update_level_length_contraction(
         return;
     };
 
-    let window_size = window.size() * gamma.vector();
+    let window_size = window.size() * gamma.0;
     proj.scaling_mode = ScalingMode::Fixed {
         width: window_size.x,
         height: window_size.y,
     };
 
-    player.scale = gamma.vector().extend(player.scale.z);
+    // player.scale.x = gamma.scalar();
+    player.scale = gamma.0.extend(player.scale.z);
 }
 
 fn update_length_contraction(
     mut transforms: Query<(&LorentzFactor, &mut Transform), Without<LevelGeometry>>,
 ) {
     for (gamma, mut local) in &mut transforms {
-        local.scale = (1.0 / gamma.vector()).extend(local.scale.z);
+        // local.scale.x = 1.0 / gamma.scalar();
+        local.scale = (1.0 / gamma.0).extend(local.scale.z);
     }
 }
