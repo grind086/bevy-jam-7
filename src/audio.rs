@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{audio::Volume, prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
@@ -16,8 +16,15 @@ pub(super) fn plugin(app: &mut App) {
 pub struct Music;
 
 /// A music audio instance.
-pub fn music(handle: Handle<AudioSource>) -> impl Bundle {
-    (AudioPlayer(handle), PlaybackSettings::LOOP, Music)
+pub fn music(handle: Handle<AudioSource>, volume: f32) -> impl Bundle {
+    (
+        AudioPlayer(handle),
+        PlaybackSettings {
+            volume: Volume::Linear(volume),
+            ..PlaybackSettings::LOOP
+        },
+        Music,
+    )
 }
 
 /// An organizational marker component that should be added to a spawned [`AudioPlayer`] if it's in the
@@ -29,8 +36,15 @@ pub fn music(handle: Handle<AudioSource>) -> impl Bundle {
 pub struct SoundEffect;
 
 /// A sound effect audio instance.
-pub fn sound_effect(handle: Handle<AudioSource>) -> impl Bundle {
-    (AudioPlayer(handle), PlaybackSettings::DESPAWN, SoundEffect)
+pub fn sound_effect(handle: Handle<AudioSource>, volume: f32) -> impl Bundle {
+    (
+        AudioPlayer(handle),
+        PlaybackSettings {
+            volume: Volume::Linear(volume),
+            ..PlaybackSettings::DESPAWN
+        },
+        SoundEffect,
+    )
 }
 
 /// [`GlobalVolume`] doesn't apply to already-running audio entities, so this system will update them.

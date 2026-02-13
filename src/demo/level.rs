@@ -95,7 +95,7 @@ pub fn spawn_level(
                 ),
                 (
                     Name::new("Gameplay Music"),
-                    music(level_assets.music.clone())
+                    music(level_assets.music.clone(), 1.0)
                 ),
                 (
                     Name::new("Enemies"),

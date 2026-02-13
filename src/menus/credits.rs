@@ -105,6 +105,6 @@ fn start_credits_music(mut commands: Commands, credits_music: Res<CreditsAssets>
     commands.spawn((
         Name::new("Credits Music"),
         DespawnOnExit(Menu::Credits),
-        music(credits_music.music.clone()),
+        music(credits_music.music.clone(), 0.5),
     ));
 }
