@@ -22,7 +22,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(FixedPreUpdate, update_grounded_caster_scales)
         .add_systems(
             FixedUpdate,
-            (update_grounded, apply_movement, apply_movement_damping)
+            (apply_movement_damping, update_grounded, apply_movement)
                 .chain()
                 .in_set(PausableSystems),
         );
@@ -56,19 +56,23 @@ pub fn movement_controller(
 #[require(MovementIntent, GroundNormal)]
 pub struct MovementController {
     pub max_speed: f32,
-    pub air_speed: f32,
+    pub accel_ground: f32,
+    pub accel_air: f32,
     pub jump_strength: f32,
-    pub damping_factor: f32,
+    pub damping_factor_air: f32,
+    pub damping_factor_ground: f32,
     pub max_slope_angle: f32,
 }
 
 impl Default for MovementController {
     fn default() -> Self {
         Self {
-            max_speed: 1.0,
-            air_speed: 0.1,
+            max_speed: 10.0,
+            accel_ground: 1.0,
+            accel_air: 0.1,
             jump_strength: 20.,
-            damping_factor: 0.9,
+            damping_factor_air: 0.1,
+            damping_factor_ground: 0.9,
             max_slope_angle: f32::to_radians(45.0),
         }
     }
@@ -113,27 +117,45 @@ fn apply_movement(
     mut movement_query: Query<(&MovementIntent, &MovementController, &GroundNormal, Forces)>,
 ) {
     for (intent, controller, ground_norm, mut forces) in &mut movement_query {
-        let speed = if ground_norm.is_grounded() {
-            controller.max_speed
-        } else {
-            controller.air_speed
-        };
-        forces.apply_local_linear_impulse(speed * intent.direction * Vec2::X);
+        // TODO: Clean this up
+
+        // Only allow acceleration if we're not at the max speed
+        let cur_speed = forces.linear_velocity().x * intent.direction;
+        if cur_speed < controller.max_speed {
+            let accel = if ground_norm.is_grounded() {
+                controller.accel_ground
+            } else {
+                controller.accel_air
+            };
+            forces.apply_linear_impulse(accel * intent.direction * Vec2::X);
+
+            // Don't accelerate past max speed
+            let new_speed = forces.linear_velocity().x * intent.direction;
+            if new_speed > controller.max_speed {
+                forces.linear_velocity_mut().x = controller.max_speed * intent.direction;
+            }
+        }
 
         if let Some(normal) = ground_norm.0
             && intent.jump
         {
-            forces.apply_local_linear_impulse(controller.jump_strength * normal);
+            forces.apply_linear_impulse(controller.jump_strength * normal);
         }
     }
 }
 
 fn apply_movement_damping(
     time: Res<Time>,
-    mut query: Query<(&MovementController, &mut LinearVelocity)>,
+    mut query: Query<(&MovementController, &GroundNormal, &mut LinearVelocity)>,
 ) {
     let dt = time.delta_secs();
-    for (controller, mut linear_velocity) in &mut query {
-        linear_velocity.x *= 1.0 / (1.0 + controller.damping_factor * dt);
+    for (controller, ground_norm, mut velocity) in &mut query {
+        let damping = if ground_norm.is_grounded() {
+            controller.damping_factor_ground
+        } else {
+            controller.damping_factor_air
+        };
+
+        velocity.x *= 1.0 / (1.0 + damping * dt);
     }
 }

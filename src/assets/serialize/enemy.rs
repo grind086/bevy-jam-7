@@ -65,19 +65,23 @@ impl From<ColliderShape> for Collider {
 #[serde(default)]
 pub struct EnemyMovement {
     pub max_speed: f32,
-    pub air_speed: f32,
+    pub accel_ground: f32,
+    pub accel_air: f32,
     pub jump_strength: f32,
-    pub damping_factor: f32,
+    pub damping_factor_air: f32,
+    pub damping_factor_ground: f32,
     pub max_slope_angle: f32,
 }
 
 impl Default for EnemyMovement {
     fn default() -> Self {
         Self {
-            max_speed: 1.0,
-            air_speed: 0.1,
+            max_speed: 10.0,
+            accel_ground: 1.0,
+            accel_air: 0.1,
             jump_strength: 20.,
-            damping_factor: 0.9,
+            damping_factor_air: 0.1,
+            damping_factor_ground: 0.9,
             max_slope_angle: f32::to_radians(45.0),
         }
     }

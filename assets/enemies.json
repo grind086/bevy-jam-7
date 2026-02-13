@@ -40,13 +40,7 @@
                 -1
             ]
         },
-        "movement": {
-            "max_speed": 1,
-            "air_speed": 0.1,
-            "jump_strength": 5,
-            "damping_factor": 0.9,
-            "max_slope_angle": 1.134464
-        }
+        "movement": {}
     },
     "bitey": {
         "name": "Bitey",
@@ -89,12 +83,6 @@
                 -0.5
             ]
         },
-        "movement": {
-            "max_speed": 1,
-            "air_speed": 0.1,
-            "jump_strength": 5,
-            "damping_factor": 0.9,
-            "max_slope_angle": 1.134464
-        }
+        "movement": {}
     }
 }

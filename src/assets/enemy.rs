@@ -74,9 +74,11 @@ impl AssetLoader for EnemyManifestLoader {
                     collider_offset: enemy_def.collider.offset,
                     movement: MovementController {
                         max_speed: enemy_def.movement.max_speed,
-                        air_speed: enemy_def.movement.air_speed,
+                        accel_air: enemy_def.movement.accel_air,
+                        accel_ground: enemy_def.movement.accel_ground,
                         jump_strength: enemy_def.movement.jump_strength,
-                        damping_factor: enemy_def.movement.damping_factor,
+                        damping_factor_air: enemy_def.movement.damping_factor_air,
+                        damping_factor_ground: enemy_def.movement.damping_factor_ground,
                         max_slope_angle: enemy_def.movement.max_slope_angle,
                     },
                 };
