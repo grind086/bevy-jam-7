@@ -70,7 +70,6 @@ pub fn player(
                 damping_factor_air: 0.3,
                 damping_factor_ground: 2.5,
                 max_slope_angle: f32::to_radians(60.0),
-                ..default()
             },
             Collider::capsule(0.35, 0.2),
             // Collider::rectangle(0.8, 1.0),
