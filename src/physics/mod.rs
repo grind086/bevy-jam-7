@@ -62,8 +62,13 @@ fn update_lorentz_factors(
         let v = player_vel.0 - target_vel.0;
         let g = Vec2::new(gamma(v.x, c.0), gamma(v.y, c.0));
         lorentz.0 = lorentz.0.lerp(g, (4.0 * time.delta_secs()).min(1.0));
-        if lorentz.0.y - 1.0 < 0.01 {
+
+        let should_round = (lorentz.0 - 1.0).cmplt(Vec2::splat(0.001));
+        if should_round.y {
             lorentz.0.y = 1.0;
+        }
+        if should_round.x {
+            lorentz.0.x = 1.0;
         }
     }
 }
@@ -84,7 +89,6 @@ fn update_level_length_contraction(
         height: window_size.y,
     };
 
-    // player.scale.x = gamma.scalar();
     player.scale = gamma.0.extend(player.scale.z);
 }
 
@@ -92,7 +96,6 @@ fn update_length_contraction(
     mut transforms: Query<(&LorentzFactor, &mut Transform), Without<LevelGeometry>>,
 ) {
     for (gamma, mut local) in &mut transforms {
-        // local.scale.x = 1.0 / gamma.scalar();
         local.scale = (1.0 / gamma.0).extend(local.scale.z);
     }
 }
