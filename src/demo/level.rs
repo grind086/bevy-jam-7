@@ -89,7 +89,7 @@ pub fn spawn_level(
             DespawnOnExit(Screen::Gameplay),
             children![
                 player(
-                    level.player_spawn.as_vec2(),
+                    level.player_spawn,
                     1.0,
                     &player_assets,
                     &mut texture_atlas_layouts
@@ -193,7 +193,7 @@ fn enemies_vec(
                     ..default()
                 },
                 AnimationPlayer::from(enemy.idle_anim.clone()),
-                Transform::from_translation(spawn.position.as_vec2().extend(0.0)),
+                Transform::from_translation((spawn.position - enemy.collider_offset).extend(0.0)),
                 movement_controller(
                     enemy.movement.clone(),
                     enemy.collider.clone(),

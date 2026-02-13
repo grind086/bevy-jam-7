@@ -1,5 +1,6 @@
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadDirectError, io::Reader},
+    math::I64Vec2,
     platform::collections::{HashMap, hash_map::Entry},
     prelude::*,
     sprite_render::{TileData, TilemapChunkTileData},
@@ -26,7 +27,7 @@ pub struct Level {
     pub name: String,
     pub grid_size: UVec2,
     pub grid_offset: IVec2,
-    pub player_spawn: IVec2,
+    pub player_spawn: Vec2,
     pub enemy_spawns: Vec<EnemySpawn>,
     pub terrain_tileset: Handle<Image>,
     pub terrain_tiledata: TilemapChunkTileData,
@@ -49,7 +50,7 @@ impl Level {
 #[derive(Reflect)]
 pub struct EnemySpawn {
     pub label: String,
-    pub position: IVec2,
+    pub position: Vec2,
 }
 
 #[derive(TypePath, Default)]
@@ -75,18 +76,19 @@ impl AssetLoader for LevelLoader {
         let entities_layer = get_named_layer(&ldtk, "Entities").unwrap();
 
         let player_spawn_entity = get_named_entity(entities_layer, "Player_Spawn").unwrap();
-        let player_spawn = IVec2::new(
-            player_spawn_entity.grid[0] as _,
-            (entities_layer.c_hei - player_spawn_entity.grid[1] - 1) as _,
-        );
+        let player_spawn = I64Vec2::new(
+            player_spawn_entity.grid[0],
+            entities_layer.c_hei - player_spawn_entity.grid[1] - 1,
+        )
+        .as_vec2()
+            + Vec2::splat(0.5);
 
         let enemy_spawns = iter_enemies(entities_layer)
             .map(|(label, def)| EnemySpawn {
                 label: label.to_lowercase(),
-                position: IVec2::new(
-                    def.grid[0] as _,
-                    (entities_layer.c_hei - def.grid[1] - 1) as _,
-                ),
+                position: I64Vec2::new(def.grid[0], entities_layer.c_hei - def.grid[1] - 1)
+                    .as_vec2()
+                    + Vec2::splat(0.5),
             })
             .collect();
 

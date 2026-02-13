@@ -46,6 +46,8 @@ pub fn player(
     let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 6, 12, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
+    let collider_offset = 0.5 * Vec2::NEG_Y;
+
     (
         Name::new("Player"),
         Player,
@@ -59,7 +61,7 @@ pub fn player(
             ..default()
         },
         AnimationPlayer::from(player_assets.idle_anim.clone()),
-        Transform::from_translation(position.extend(0.0)),
+        Transform::from_translation((position - collider_offset).extend(0.0)),
         movement_controller(
             MovementController {
                 max_speed,
@@ -67,7 +69,7 @@ pub fn player(
             },
             Collider::capsule(0.35, 0.2),
             // Collider::rectangle(0.8, 1.0),
-            0.5 * Vec2::NEG_Y,
+            collider_offset,
             CollisionLayers::player(),
         ),
         observe(trigger_step_sound_effect),
