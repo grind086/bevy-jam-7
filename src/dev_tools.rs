@@ -15,6 +15,7 @@ use crate::{physics::SpeedOfLight, screens::Screen};
 
 const INSPECTOR_TOGGLE_KEY: KeyCode = KeyCode::Backquote;
 const UI_DEBUG_TOGGLE_KEY: KeyCode = KeyCode::F1;
+const PHYSICS_DEBUG_TOGGLE_KEY: KeyCode = KeyCode::F2;
 
 pub(super) fn plugin(app: &mut App) {
     // World inspector
@@ -26,13 +27,18 @@ pub(super) fn plugin(app: &mut App) {
     ));
 
     // Physics
-    app.add_plugins(PhysicsDebugPlugin).insert_gizmo_config(
-        PhysicsGizmos {
-            axis_lengths: None,
-            ..default()
-        },
-        GizmoConfig::default(),
-    );
+    app.add_plugins(PhysicsDebugPlugin)
+        .insert_gizmo_config(
+            PhysicsGizmos {
+                axis_lengths: None,
+                ..default()
+            },
+            GizmoConfig::default(),
+        )
+        .add_systems(
+            Update,
+            toggle_physics_gizmos.run_if(input_just_pressed(PHYSICS_DEBUG_TOGGLE_KEY)),
+        );
 
     // Log `Screen` state transitions.
     app.add_systems(Update, log_transitions::<Screen>);
@@ -46,4 +52,9 @@ pub(super) fn plugin(app: &mut App) {
 
 fn toggle_debug_ui(mut options: ResMut<UiDebugOptions>) {
     options.toggle();
+}
+
+fn toggle_physics_gizmos(mut store: ResMut<GizmoConfigStore>) {
+    let (config, _) = store.config_mut::<PhysicsGizmos>();
+    config.enabled = !config.enabled;
 }
