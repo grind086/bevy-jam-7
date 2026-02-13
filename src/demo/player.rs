@@ -143,7 +143,7 @@ fn trigger_step_sound_effect(
         let rng = &mut rand::rng();
         if rng.random_bool(0.7) {
             let random_step = player_assets.steps.choose(rng).unwrap().clone();
-            commands.spawn(sound_effect(random_step, 0.6));
+            commands.spawn(sound_effect(random_step, 0.3));
         }
     }
 }
@@ -185,10 +185,12 @@ impl FromWorld for PlayerAssets {
         Self {
             ducky: assets.load("images/Hero_001.png"),
             steps: vec![
-                assets.load("audio/sound_effects/step1.ogg"),
-                assets.load("audio/sound_effects/step2.ogg"),
-                assets.load("audio/sound_effects/step3.ogg"),
-                assets.load("audio/sound_effects/step4.ogg"),
+                assets.load("audio/sound_effects/steps/grass1.ogg"),
+                assets.load("audio/sound_effects/steps/grass2.ogg"),
+                assets.load("audio/sound_effects/steps/grass3.ogg"),
+                assets.load("audio/sound_effects/steps/grass4.ogg"),
+                assets.load("audio/sound_effects/steps/grass5.ogg"),
+                assets.load("audio/sound_effects/steps/grass6.ogg"),
             ],
             idle_anim,
             walk_anim,
