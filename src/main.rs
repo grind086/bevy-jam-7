@@ -115,7 +115,7 @@ fn spawn_camera(mut commands: Commands) {
         Camera2d,
         PlayerCamera,
         Projection::Orthographic(OrthographicProjection {
-            scale: 1. / 32.,
+            scale: 0.75 * 1. / 32.,
             ..OrthographicProjection::default_2d()
         }),
     ));
