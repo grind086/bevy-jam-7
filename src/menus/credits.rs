@@ -42,6 +42,7 @@ fn assets() -> impl Bundle {
         ["Button SFX", "CC0 by Jaszunio15"],
         ["Music", "CC BY 3.0 by Kevin MacLeod"],
         ["Tiles", "CC0 by hdst (edited)"],
+        ["Background", "CC0 by Luis Zuno"],
         ["Game SFX", "Licensed from ELVGames"],
         [
             "Bevy logo",
