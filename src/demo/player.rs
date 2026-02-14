@@ -202,8 +202,6 @@ impl FromWorld for PlayerAssets {
                 assets.load("audio/sound_effects/steps/grass2.ogg"),
                 assets.load("audio/sound_effects/steps/grass3.ogg"),
                 assets.load("audio/sound_effects/steps/grass4.ogg"),
-                assets.load("audio/sound_effects/steps/grass5.ogg"),
-                assets.load("audio/sound_effects/steps/grass6.ogg"),
             ],
             idle_anim,
             walk_anim,

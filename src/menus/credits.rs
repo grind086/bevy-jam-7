@@ -43,7 +43,7 @@ fn assets() -> impl Bundle {
         ["Music", "CC BY 3.0 by Kevin MacLeod"],
         ["Tiles", "CC0 by hdst (edited)"],
         ["Background", "CC0 by Luis Zuno"],
-        ["Game SFX", "Licensed from ELVGames"],
+        ["Step SFX", "Free for Use by Chequered Ink"],
         [
             "Bevy logo",
             "All rights reserved by the Bevy Foundation, permission granted for splash screen use when unmodified",
