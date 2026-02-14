@@ -11,11 +11,12 @@ use bevy_inspector_egui::{
     quick::{ResourceInspectorPlugin, WorldInspectorPlugin},
 };
 
-use crate::{physics::SpeedOfLight, screens::Screen};
+use crate::{demo::level::EnemyHandle, physics::SpeedOfLight, screens::Screen};
 
 const INSPECTOR_TOGGLE_KEY: KeyCode = KeyCode::Backquote;
 const UI_DEBUG_TOGGLE_KEY: KeyCode = KeyCode::F1;
 const PHYSICS_DEBUG_TOGGLE_KEY: KeyCode = KeyCode::F2;
+const DESPAWN_ENEMIES_KEY: KeyCode = KeyCode::F12;
 
 pub(super) fn plugin(app: &mut App) {
     // World inspector
@@ -48,6 +49,12 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         toggle_debug_ui.run_if(input_just_pressed(UI_DEBUG_TOGGLE_KEY)),
     );
+
+    // Kill all enemies
+    app.add_systems(
+        Update,
+        despawn_all_enemies.run_if(input_just_pressed(DESPAWN_ENEMIES_KEY)),
+    );
 }
 
 fn toggle_debug_ui(mut options: ResMut<UiDebugOptions>) {
@@ -57,4 +64,10 @@ fn toggle_debug_ui(mut options: ResMut<UiDebugOptions>) {
 fn toggle_physics_gizmos(mut store: ResMut<GizmoConfigStore>) {
     let (config, _) = store.config_mut::<PhysicsGizmos>();
     config.enabled = !config.enabled;
+}
+
+fn despawn_all_enemies(enemies: Query<Entity, With<EnemyHandle>>, mut commands: Commands) {
+    for enemy in &enemies {
+        commands.entity(enemy).try_despawn();
+    }
 }
