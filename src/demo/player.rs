@@ -46,7 +46,7 @@ pub fn player(
         TextureAtlasLayout::from_grid(UVec2::splat(32), 4, 4, Some(UVec2::ONE), Some(UVec2::ONE));
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
-    let collider_offset = 0.5 * Vec2::NEG_Y;
+    let collider_offset = 0.55 * Vec2::NEG_Y;
 
     (
         Name::new("Player"),
@@ -72,7 +72,7 @@ pub fn player(
                 damping_factor_ground: 2.5,
                 max_slope_angle: f32::to_radians(60.0),
             },
-            Collider::capsule(0.2, 0.4),
+            Collider::capsule(0.2, 0.45),
             // Collider::rectangle(0.8, 1.0),
             collider_offset,
             CollisionLayers::player(),
