@@ -322,19 +322,16 @@ pub(super) mod hot_reload {
         mut enemies: Query<(&EnemyHandle, &mut MovementController)>,
     ) {
         for ev in asset_events.read() {
-            match ev {
-                &AssetEvent::Modified { id } => {
-                    let enemy = assets.get(id).unwrap();
-                    info!("Reloading enemy {:?}", enemy.name);
+            if let &AssetEvent::Modified { id } = ev {
+                let enemy = assets.get(id).unwrap();
+                info!("Reloading enemy {:?}", enemy.name);
 
-                    // Update movement controllers
-                    for (handle, mut controller) in &mut enemies {
-                        if handle.0.id() == id {
-                            *controller = enemy.movement.clone();
-                        }
+                // Update movement controllers
+                for (handle, mut controller) in &mut enemies {
+                    if handle.0.id() == id {
+                        *controller = enemy.movement.clone();
                     }
                 }
-                _ => {}
             }
         }
     }
