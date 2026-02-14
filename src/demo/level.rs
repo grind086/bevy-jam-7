@@ -268,14 +268,18 @@ fn update_enemy_animations(
 pub(super) mod hot_reload {
     use bevy::asset::AssetEventSystems;
 
+    use crate::demo::movement::MovementController;
+
     use super::*;
 
     pub fn plugin(app: &mut App) {
         app.add_systems(
             PostUpdate,
-            reload_level
-                .after(AssetEventSystems)
-                .run_if(on_message::<AssetEvent<Level>>),
+            (
+                reload_level.run_if(on_message::<AssetEvent<Level>>),
+                reload_enemy.run_if(on_message::<AssetEvent<Enemy>>),
+            )
+                .after(AssetEventSystems),
         );
     }
 
@@ -306,6 +310,29 @@ pub(super) mod hot_reload {
 
                     // Spawn new terrain colliders
                     commands.spawn_batch(colliders_batch(level, level_geometry.0));
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn reload_enemy(
+        mut asset_events: MessageReader<AssetEvent<Enemy>>,
+        assets: Res<Assets<Enemy>>,
+        mut enemies: Query<(&EnemyHandle, &mut MovementController)>,
+    ) {
+        for ev in asset_events.read() {
+            match ev {
+                &AssetEvent::Modified { id } => {
+                    let enemy = assets.get(id).unwrap();
+                    info!("Reloading enemy {:?}", enemy.name);
+
+                    // Update movement controllers
+                    for (handle, mut controller) in &mut enemies {
+                        if handle.0.id() == id {
+                            *controller = enemy.movement.clone();
+                        }
+                    }
                 }
                 _ => {}
             }
