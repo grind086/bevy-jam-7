@@ -42,8 +42,13 @@ impl Level {
         }
     }
 
-    pub fn center_position(&self) -> Vec2 {
-        self.bounds().as_rect().center()
+    // pub fn center_position(&self) -> Vec2 {
+    //     self.bounds().as_rect().center()
+    // }
+
+    pub fn center_offset(&self) -> Vec2 {
+        let b = self.bounds().as_rect();
+        0.5 * (b.max - b.min)
     }
 }
 
