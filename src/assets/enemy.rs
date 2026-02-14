@@ -17,6 +17,8 @@ pub struct Enemy {
     pub atlas_layout: Handle<TextureAtlasLayout>,
     pub idle_anim: Handle<Animation>,
     pub walk_anim: Handle<Animation>,
+    pub jump_anim: Handle<Animation>,
+    pub peak_anim: Handle<Animation>,
     pub fall_anim: Handle<Animation>,
     #[reflect(ignore)]
     pub collider: Collider,
@@ -68,6 +70,10 @@ impl AssetLoader for EnemyManifestLoader {
                         .ok_or("missing idle animation")?,
                     walk_anim: load_animation(ctx, &label, &enemy_def.atlas_animations, "walk")
                         .ok_or("missing walk animation")?,
+                    jump_anim: load_animation(ctx, &label, &enemy_def.atlas_animations, "jump")
+                        .ok_or("missing jump animation")?,
+                    peak_anim: load_animation(ctx, &label, &enemy_def.atlas_animations, "peak")
+                        .ok_or("missing peak animation")?,
                     fall_anim: load_animation(ctx, &label, &enemy_def.atlas_animations, "fall")
                         .ok_or("missing fall animation")?,
                     collider: enemy_def.collider.shape.into(),

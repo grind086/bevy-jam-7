@@ -1,6 +1,6 @@
 //! Spawn the main level.
 
-use avian2d::prelude::{CollisionLayers, RigidBody};
+use avian2d::prelude::{CollisionLayers, LinearVelocity, RigidBody};
 use bevy::{
     ecs::bundle::NoBundleEffect,
     prelude::*,
@@ -227,11 +227,12 @@ fn update_enemy_animations(
         &EnemyHandle,
         &MovementIntent,
         Option<&GroundNormal>,
+        Option<&LinearVelocity>,
         &mut Sprite,
         &mut AnimationPlayer,
     )>,
 ) {
-    for (handle, intent, ground_norm, mut sprite, mut animation) in &mut player_query {
+    for (handle, intent, ground_norm, velocity, mut sprite, mut animation) in &mut player_query {
         let Some(enemy) = assets.get(&handle.0) else {
             continue;
         };
@@ -247,7 +248,14 @@ fn update_enemy_animations(
                 &enemy.walk_anim
             }
         } else {
-            &enemy.fall_anim
+            let v = velocity.map_or(-1.0, |v| v.y);
+            if v.abs() < 0.5 {
+                &enemy.peak_anim
+            } else if v > 0.0 {
+                &enemy.jump_anim
+            } else {
+                &enemy.fall_anim
+            }
         };
 
         if next_anim.id() != animation.animation.id() {
