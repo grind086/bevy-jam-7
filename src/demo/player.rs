@@ -2,7 +2,7 @@
 
 use avian2d::prelude::{Collider, CollisionLayers, LinearVelocity};
 use bevy::{prelude::*, ui_widgets::observe};
-use rand::{Rng, seq::IndexedRandom};
+use rand::seq::IndexedRandom;
 
 use crate::{
     AppSystems, PausableSystems,
@@ -149,10 +149,8 @@ fn trigger_step_sound_effect(
 ) {
     if ev.marker == PlayerAssets::STEP_MARKER {
         let rng = &mut rand::rng();
-        if rng.random_bool(0.7) {
-            let random_step = player_assets.steps.choose(rng).unwrap().clone();
-            commands.spawn(sound_effect(random_step, 0.3));
-        }
+        let random_step = player_assets.steps.choose(rng).unwrap().clone();
+        commands.spawn(sound_effect(random_step, 0.3));
     }
 }
 
