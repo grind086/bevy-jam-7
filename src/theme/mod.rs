@@ -12,7 +12,10 @@ pub use srgb_hex::*;
 
 #[allow(unused_imports)]
 pub mod prelude {
-    pub use super::{interaction::InteractionPalette, palette as ui_palette, srgb_hex, widget};
+    pub use super::{
+        interaction::{InteractionPalette, InteractionSounds},
+        palette as ui_palette, srgb_hex, widget,
+    };
 }
 
 use bevy::prelude::*;

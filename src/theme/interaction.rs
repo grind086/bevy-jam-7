@@ -87,18 +87,27 @@ impl FromWorld for InteractionAssets {
     }
 }
 
+#[derive(Component, Reflect)]
+pub struct InteractionSounds;
+
 fn play_sound_effect_on_click(
-    _: On<Pointer<Click>>,
+    click: On<Pointer<Click>>,
     interaction_assets: If<Res<InteractionAssets>>,
+    interactables: Query<(), With<InteractionSounds>>,
     mut commands: Commands,
 ) {
-    commands.spawn(sound_effect(interaction_assets.click.clone(), 1.0));
+    if interactables.contains(click.entity) {
+        commands.spawn(sound_effect(interaction_assets.click.clone(), 1.0));
+    }
 }
 
 fn play_sound_effect_on_over(
-    _: On<Pointer<Over>>,
+    over: On<Pointer<Over>>,
     interaction_assets: If<Res<InteractionAssets>>,
+    interactables: Query<(), With<InteractionSounds>>,
     mut commands: Commands,
 ) {
-    commands.spawn(sound_effect(interaction_assets.hover.clone(), 1.0));
+    if interactables.contains(over.entity) {
+        commands.spawn(sound_effect(interaction_assets.hover.clone(), 1.0));
+    }
 }
