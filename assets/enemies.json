@@ -23,7 +23,7 @@
             "walk": {
                 "start": 4,
                 "end": 8,
-                "frame_millis": 50
+                "frame_millis": 100
             },
             "jump": {
                 "start": 8,
@@ -50,7 +50,10 @@
                 -0.55
             ]
         },
-        "movement": {}
+        "movement": {
+            "max_speed": 5,
+            "jump_strength": 10
+        }
     },
     "bitey": {
         "name": "Bitey",
