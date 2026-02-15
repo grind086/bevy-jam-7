@@ -66,8 +66,8 @@ pub fn player(
             MovementController {
                 max_speed: 20.,
                 accel_ground: 1.5,
-                accel_air: 0.1,
-                jump_strength: 20.,
+                accel_air: 0.2,
+                jump_strength: 17.,
                 damping_factor_air: 0.3,
                 damping_factor_ground: 2.5,
                 max_slope_angle: f32::to_radians(60.0),
