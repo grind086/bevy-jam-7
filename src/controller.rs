@@ -121,11 +121,13 @@ fn update_grounded(mut controllers: Query<(&CharacterController, &ShapeHits, &mu
 fn apply_gravity(
     time: Res<Time>,
     gravity: Res<Gravity>,
-    mut query: Query<&mut LinearVelocity, With<CharacterController>>,
+    mut query: Query<(&GroundNormal, &mut LinearVelocity), With<CharacterController>>,
 ) {
     let g = gravity.0 * time.delta_secs();
-    for mut velocity in &mut query {
-        velocity.0 += g;
+    for (ground_normal, mut velocity) in &mut query {
+        if !ground_normal.is_grounded() {
+            velocity.0 += g;
+        }
     }
 }
 
