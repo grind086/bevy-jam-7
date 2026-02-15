@@ -8,11 +8,17 @@ use bevy::{
 };
 use bevy_inspector_egui::{
     bevy_egui::EguiPlugin,
-    quick::{AssetInspectorPlugin, ResourceInspectorPlugin, WorldInspectorPlugin},
+    quick::{
+        AssetInspectorPlugin, FilterQueryInspectorPlugin, ResourceInspectorPlugin,
+        WorldInspectorPlugin,
+    },
 };
 
 use crate::{
-    background::ParallaxMaterial, demo::level::EnemyHandle, physics::SpeedOfLight, screens::Screen,
+    background::ParallaxMaterial,
+    demo::{level::EnemyHandle, player::Player},
+    physics::SpeedOfLight,
+    screens::Screen,
 };
 
 const INSPECTOR_TOGGLE_KEY: KeyCode = KeyCode::Backquote;
@@ -28,6 +34,8 @@ pub(super) fn plugin(app: &mut App) {
         ResourceInspectorPlugin::<SpeedOfLight>::new()
             .run_if(input_toggle_active(true, INSPECTOR_TOGGLE_KEY)),
         AssetInspectorPlugin::<ParallaxMaterial>::new()
+            .run_if(input_toggle_active(true, INSPECTOR_TOGGLE_KEY)),
+        FilterQueryInspectorPlugin::<With<Player>>::new()
             .run_if(input_toggle_active(true, INSPECTOR_TOGGLE_KEY)),
     ));
 
