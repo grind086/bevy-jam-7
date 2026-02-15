@@ -42,8 +42,7 @@ pub fn player(
     player_assets: &PlayerAssets,
     texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
 ) -> impl Bundle {
-    let layout =
-        TextureAtlasLayout::from_grid(UVec2::splat(32), 4, 4, Some(UVec2::ONE), Some(UVec2::ONE));
+    let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 1, 23, Some(UVec2::ONE), None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     let collider_offset = 0.55 * Vec2::NEG_Y;
@@ -60,7 +59,7 @@ pub fn player(
                 accel_ground: 35.0,
                 decel_ground: 20.0,
                 damping_air: 0.3,
-                damping_ground: 2.5,
+                damping_ground: 0.9,
                 jump_impulse: 65.0,
                 jump_min_ticks: 4,
                 jump_max_ticks: 8,
@@ -101,8 +100,9 @@ fn record_player_directional_input(
     // Collect directional input.
     let lt = input.any_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]);
     let rt = input.any_pressed([KeyCode::KeyD, KeyCode::ArrowRight]);
+    let run = !input.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]);
 
-    intent.movement = (rt as i8 - lt as i8).into();
+    intent.movement = f32::from(rt as i8 - lt as i8) * if run { 1.0 } else { 0.25 };
     intent.jump = input.pressed(KeyCode::Space);
 }
 
@@ -129,16 +129,19 @@ fn update_animation_movement(
     }
 
     let next_anim = if ground_norm.is_none_or(GroundNormal::is_grounded) {
-        if intent.movement == 0.0 {
+        let vx = velocity.map_or(0.0, |v| v.x.abs());
+        if vx < 0.1 {
             &assets.idle_anim
-        } else {
+        } else if vx < 10.0 {
             &assets.walk_anim
+        } else {
+            &assets.run_anim
         }
     } else {
-        let v = velocity.map_or(-1.0, |v| v.y);
-        if v.abs() < 0.5 {
+        let vy = velocity.map_or(-1.0, |v| v.y);
+        if vy.abs() < 0.5 {
             &assets.peak_anim
-        } else if v > 0.0 {
+        } else if vy > 0.0 {
             &assets.jump_anim
         } else {
             &assets.fall_anim
@@ -178,6 +181,7 @@ pub struct PlayerAssets {
     pub steps: Vec<Handle<AudioSource>>,
     pub idle_anim: Handle<Animation>,
     pub walk_anim: Handle<Animation>,
+    pub run_anim: Handle<Animation>,
     pub jump_anim: Handle<Animation>,
     pub peak_anim: Handle<Animation>,
     pub fall_anim: Handle<Animation>,
@@ -193,12 +197,15 @@ impl FromWorld for PlayerAssets {
         let idle_anim = animations.add(Animation::from_frame_range_and_millis(0..4, 250));
         let walk_anim = animations.add(
             Animation::from_frame_range_and_millis(4..12, 50)
+                .with_marker(Self::STEP_MARKER, [2, 6]),
+        );
+        let run_anim = animations.add(
+            Animation::from_frame_range_and_millis(12..20, 50)
                 .with_marker(Self::STEP_MARKER, [3, 7]),
         );
-
-        let jump_anim = animations.add(Animation::from_frame_range_and_millis(12..13, 50));
-        let peak_anim = animations.add(Animation::from_frame_range_and_millis(13..14, 50));
-        let fall_anim = animations.add(Animation::from_frame_range_and_millis(14..15, 50));
+        let jump_anim = animations.add(Animation::from_frame_range_and_millis(20..21, 50));
+        let peak_anim = animations.add(Animation::from_frame_range_and_millis(21..22, 50));
+        let fall_anim = animations.add(Animation::from_frame_range_and_millis(22..23, 50));
 
         let assets = world.resource::<AssetServer>();
         Self {
@@ -211,6 +218,7 @@ impl FromWorld for PlayerAssets {
             ],
             idle_anim,
             walk_anim,
+            run_anim,
             jump_anim,
             peak_anim,
             fall_anim,
