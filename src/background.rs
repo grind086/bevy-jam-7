@@ -31,47 +31,22 @@ struct BackgroundAssets {
 
 impl FromWorld for BackgroundAssets {
     fn from_world(world: &mut World) -> Self {
+        fn repeat_x(settings: &mut ImageLoaderSettings) {
+            settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
+                address_mode_u: ImageAddressMode::Repeat,
+                ..ImageSamplerDescriptor::nearest()
+            });
+        }
+
         let assets = world.resource::<AssetServer>();
         let material = ParallaxMaterial {
-            scale: Vec2::splat(1. / 16.),
-            offset: Vec2::new(0.0, 13.0),
+            scale: Vec2::splat(1. / 8.),
+            offset: Vec2::new(0.0, 22.0),
             camera_position: Vec2::ZERO,
-            back: assets.load_with_settings(
-                "images/background/back-trees.png",
-                |settings: &mut ImageLoaderSettings| {
-                    settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
-                        address_mode_u: ImageAddressMode::Repeat,
-                        ..ImageSamplerDescriptor::nearest()
-                    });
-                },
-            ),
-            middle: assets.load_with_settings(
-                "images/background/middle-trees.png",
-                |settings: &mut ImageLoaderSettings| {
-                    settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
-                        address_mode_u: ImageAddressMode::Repeat,
-                        ..ImageSamplerDescriptor::nearest()
-                    });
-                },
-            ),
-            front: assets.load_with_settings(
-                "images/background/front-trees.png",
-                |settings: &mut ImageLoaderSettings| {
-                    settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
-                        address_mode_u: ImageAddressMode::Repeat,
-                        ..ImageSamplerDescriptor::nearest()
-                    });
-                },
-            ),
-            light: assets.load_with_settings(
-                "images/background/lights.png",
-                |settings: &mut ImageLoaderSettings| {
-                    settings.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
-                        address_mode_u: ImageAddressMode::Repeat,
-                        ..ImageSamplerDescriptor::nearest()
-                    });
-                },
-            ),
+            back: assets.load_with_settings("images/background/back-trees.png", repeat_x),
+            middle: assets.load_with_settings("images/background/middle-trees.png", repeat_x),
+            front: assets.load_with_settings("images/background/front-trees.png", repeat_x),
+            light: assets.load_with_settings("images/background/lights.png", repeat_x),
         };
 
         let mesh = world
