@@ -55,14 +55,59 @@ pub fn character_controller(
 #[reflect(Component)]
 #[require(CharacterIntent, GroundNormal, JumpState, MoveAndSlideResult)]
 pub struct CharacterController {
+    /// Acceleration applied while in the air.
     pub accel_air: f32,
+
+    /// Acceleration applied while on the ground.
     pub accel_ground: f32,
+
+    /// Deceleration applied while on the ground with a neutral [`movement`] intent.
+    ///
+    /// Generally this should be less than [`accel_ground`], but it isn't required.
+    ///
+    /// [`movement`]: CharacterIntent::movement
+    /// [`accel_ground`]: Self::accel_ground
+    pub decel_ground: f32,
+
+    /// Exponential velocity falloff (per second) while in the air.
     pub damping_air: f32,
+
+    /// Exponential velocity falloff (per second) while grounded.
     pub damping_ground: f32,
+
+    /// The impulse to apply when jumping.
+    ///
+    /// When a character jumps this impulse will be applied for between [`jump_min_ticks`] and
+    /// [`jump_max_ticks`] physics timesteps, depending on how long the character's [`jump`] intent
+    /// remains `true`.
+    ///
+    /// [`jump_min_ticks`]: Self::jump_min_ticks
+    /// [`jump_max_ticks`]: Self::jump_max_ticks
+    /// [`jump`]: CharacterIntent::jump
     pub jump_impulse: f32,
+
+    /// Jump impulses will always be applied for at least this many physics timesteps.
+    ///
+    /// Increasing this can result in a more consistent minimum jump height, but may cause the
+    /// controller to feel less responsive.
     pub jump_min_ticks: u32,
+
+    /// Jump impulses will be applied for at most this many physics timesteps.
+    ///
+    /// Low values will result in a smaller range of possible jump heights. Large values combined
+    /// with a low [`jump_impulse`] can be used for a jetpack type effect.
+    ///
+    /// If this is less than or equal to [`jump_min_ticks`], jump impulses will always be applied
+    /// for exactly [`jump_min_ticks`] physics timesteps.
+    ///
+    /// [`jump_impulse`]: Self::jump_impulse
+    /// [`jump_min_ticks`]: Self::jump_min_ticks
     pub jump_max_ticks: u32,
+
+    /// The maximum angle on which a character can stand and be considered grounded.
     pub max_slope_angle: f32,
+
+    /// The maximum speed that the character can accelerate itself to while on the ground.
     pub max_speed: f32,
 }
 
@@ -159,8 +204,13 @@ fn apply_intents(
     for (intent, controller, ground_norm, mut velocity, mut jump_state) in &mut intents {
         if let Some(normal) = ground_norm.0 {
             // Ground
-            let dv = controller.accel_ground * time.delta_secs();
+            let accel = if intent.movement == 0.0 {
+                controller.decel_ground
+            } else {
+                controller.accel_ground
+            };
 
+            let dv = accel * time.delta_secs();
             let cur_speed = velocity.x;
             let req_speed = intent.movement * controller.max_speed;
 

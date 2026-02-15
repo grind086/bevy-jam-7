@@ -56,8 +56,9 @@ pub fn player(
         character_controller(
             CharacterController {
                 max_speed: 20.,
-                accel_ground: 35.0,
                 accel_air: 3.5,
+                accel_ground: 35.0,
+                decel_ground: 20.0,
                 damping_air: 0.3,
                 damping_ground: 2.5,
                 jump_impulse: 65.0,
