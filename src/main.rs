@@ -8,6 +8,7 @@ mod asset_tracking;
 mod assets;
 mod audio;
 mod background;
+mod controller;
 mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
@@ -61,6 +62,7 @@ impl Plugin for AppPlugin {
             animation::plugin,
             audio::plugin,
             physics::plugin,
+            controller::plugin,
             demo::plugin,
             background::plugin,
             #[cfg(feature = "dev")]

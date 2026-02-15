@@ -9,7 +9,7 @@ use crate::{
     animation::{Animation, AnimationEvent, AnimationPlayer},
     asset_tracking::LoadResource,
     audio::sound_effect,
-    demo::movement::{GroundNormal, MovementController, MovementIntent, movement_controller},
+    controller::{CharacterController, CharacterIntent, GroundNormal, character_controller},
     physics::GamePhysicsLayersExt,
     screens::Screen,
 };
@@ -51,33 +51,37 @@ pub fn player(
     (
         Name::new("Player"),
         Player,
-        Sprite {
-            image: player_assets.ducky.clone(),
-            texture_atlas: Some(TextureAtlas {
-                layout: texture_atlas_layout,
-                index: 0,
-            }),
-            custom_size: Some(Vec2::splat(2.)),
-            ..default()
-        },
-        AnimationPlayer::from(player_assets.idle_anim.clone()),
-        Transform::from_translation((position - collider_offset).extend(0.0)),
-        movement_controller(
-            MovementController {
+        Transform::from_translation(position.extend(0.0)),
+        Visibility::default(),
+        character_controller(
+            CharacterController {
                 max_speed: 20.,
-                accel_ground: 1.5,
-                accel_air: 0.2,
-                jump_strength: 17.,
-                damping_factor_air: 0.3,
-                damping_factor_ground: 2.5,
+                accel_ground: 35.0,
+                accel_air: 3.5,
+                damping_air: 0.3,
+                damping_ground: 2.5,
+                jump_impulse: 65.0,
+                jump_min_ticks: 4,
+                jump_max_ticks: 8,
                 max_slope_angle: f32::to_radians(60.0),
             },
             Collider::capsule(0.2, 0.45),
-            // Collider::rectangle(0.8, 1.0),
-            collider_offset,
             CollisionLayers::player(),
         ),
-        observe(trigger_step_sound_effect),
+        children![(
+            Sprite {
+                image: player_assets.ducky.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    layout: texture_atlas_layout,
+                    index: 0,
+                }),
+                custom_size: Some(Vec2::splat(2.)),
+                ..default()
+            },
+            Transform::from_translation((-collider_offset).extend(0.0)),
+            AnimationPlayer::from(player_assets.idle_anim.clone()),
+            observe(trigger_step_sound_effect),
+        )],
     )
 }
 
@@ -91,13 +95,13 @@ pub struct PlayerCamera;
 
 fn record_player_directional_input(
     input: Res<ButtonInput<KeyCode>>,
-    mut intent: Single<&mut MovementIntent, With<Player>>,
+    mut intent: Single<&mut CharacterIntent, With<Player>>,
 ) {
     // Collect directional input.
     let lt = input.any_pressed([KeyCode::KeyA, KeyCode::ArrowLeft]);
     let rt = input.any_pressed([KeyCode::KeyD, KeyCode::ArrowRight]);
 
-    intent.direction = (rt as i8 - lt as i8).into();
+    intent.movement = (rt as i8 - lt as i8).into();
     intent.jump = input.pressed(KeyCode::Space);
 }
 
@@ -105,23 +109,26 @@ fn update_animation_movement(
     assets: Res<PlayerAssets>,
     player: Single<
         (
-            &MovementIntent,
+            &CharacterIntent,
             Option<&GroundNormal>,
             Option<&LinearVelocity>,
-            &mut Sprite,
-            &mut AnimationPlayer,
+            &Children,
         ),
         With<Player>,
     >,
+    mut sprites: Query<(&mut Sprite, &mut AnimationPlayer)>,
 ) {
-    let (intent, ground_norm, velocity, mut sprite, mut animation) = player.into_inner();
+    let (intent, ground_norm, velocity, children) = player.into_inner();
+    let Ok((mut sprite, mut animation)) = sprites.get_mut(children[0]) else {
+        return;
+    };
 
-    if intent.direction != 0.0 {
-        sprite.flip_x = intent.direction < 0.0;
+    if intent.movement != 0.0 {
+        sprite.flip_x = intent.movement < 0.0;
     }
 
     let next_anim = if ground_norm.is_none_or(GroundNormal::is_grounded) {
-        if intent.direction == 0.0 {
+        if intent.movement == 0.0 {
             &assets.idle_anim
         } else {
             &assets.walk_anim

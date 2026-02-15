@@ -5,9 +5,12 @@ use avian2d::{
 };
 use bevy::{camera::ScalingMode, prelude::*, window::PrimaryWindow};
 
-use crate::demo::{
-    level::LevelGeometry,
-    player::{Player, PlayerCamera},
+use crate::{
+    controller::CharacterController,
+    demo::{
+        level::LevelGeometry,
+        player::{Player, PlayerCamera},
+    },
 };
 
 mod layers;
@@ -81,7 +84,7 @@ fn update_level_length_contraction(
     gamma: Single<&LorentzFactor, With<LevelGeometry>>,
     window: Single<&Window, With<PrimaryWindow>>,
     camera: Single<&mut Projection, With<PlayerCamera>>,
-    mut player: Single<&mut Transform, With<Player>>,
+    mut player: Single<(&mut Transform, &mut CharacterController), With<Player>>,
 ) {
     let Projection::Orthographic(proj) = &mut *camera.into_inner() else {
         return;
@@ -93,7 +96,12 @@ fn update_level_length_contraction(
         height: window_size.y,
     };
 
-    player.scale = gamma.0.extend(player.scale.z);
+    player.0.scale = gamma.0.extend(player.0.scale.z);
+    player.1.max_speed = 20. * gamma.0.x;
+    player.1.accel_air = 3.5 * gamma.0.x.sqrt();
+    player.1.accel_ground = 35. * gamma.0.x.sqrt();
+    // player.1.damping_factor_air = 0.3 * gamma.0.x.sqrt();
+    // player.1.damping_factor_ground = 2.5 * gamma.0.x.sqrt();
 }
 
 fn update_length_contraction(
