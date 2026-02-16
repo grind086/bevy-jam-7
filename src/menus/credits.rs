@@ -38,7 +38,10 @@ fn assets() -> impl Bundle {
     grid(vec![
         ["Button SFX", "CC0 by Jaszunio15"],
         ["Music - Silent Wood", "CC BY-SA 3.0 by Purple Cat"],
-        ["Music - Monkeys Spinning Monkeys", "CC BY 3.0 by Kevin MacLeod"],
+        [
+            "Music - Monkeys Spinning Monkeys",
+            "CC BY 3.0 by Kevin MacLeod",
+        ],
         ["Tiles", "CC0 by hdst (edited)"],
         ["Background", "CC0 by Luis Zuno"],
         ["Step SFX", "Free for Use by Chequered Ink"],
