@@ -97,9 +97,9 @@ fn update_level_length_contraction(
     };
 
     player.0.scale = gamma.0.extend(player.0.scale.z);
-    player.1.max_speed = 20. * gamma.0.x;
-    player.1.accel_air = 3.5 * gamma.0.x.sqrt();
-    player.1.accel_ground = 35. * gamma.0.x.sqrt();
+    // player.1.max_speed = 20. * gamma.0.x;
+    // player.1.accel_air = 3.5 * gamma.0.x.sqrt();
+    // player.1.accel_ground = 35. * gamma.0.x.sqrt();
     // player.1.damping_factor_air = 0.3 * gamma.0.x.sqrt();
     // player.1.damping_factor_ground = 2.5 * gamma.0.x.sqrt();
 }

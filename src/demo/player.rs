@@ -45,8 +45,6 @@ pub fn player(
     let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 1, 23, Some(UVec2::ONE), None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
-    let collider_offset = 0.55 * Vec2::NEG_Y;
-
     (
         Name::new("Player"),
         Player,
@@ -54,10 +52,10 @@ pub fn player(
         Visibility::default(),
         character_controller(
             CharacterController {
-                max_speed: 20.,
-                accel_air: 3.5,
+                max_speed: 12.,
+                accel_air: 5.0,
                 accel_ground: 35.0,
-                decel_ground: 20.0,
+                decel_ground: 30.0,
                 damping_air: 0.3,
                 damping_ground: 0.9,
                 jump_impulse: 65.0,
@@ -65,7 +63,7 @@ pub fn player(
                 jump_max_ticks: 8,
                 max_slope_angle: f32::to_radians(60.0),
             },
-            Collider::capsule(0.2, 0.45),
+            Collider::capsule(0.2, 0.5),
             CollisionLayers::player(),
         ),
         children![(
@@ -78,7 +76,7 @@ pub fn player(
                 custom_size: Some(Vec2::splat(2.)),
                 ..default()
             },
-            Transform::from_translation((-collider_offset).extend(0.0)),
+            Transform::from_translation((0.508 * Vec2::Y).extend(0.0)),
             AnimationPlayer::from(player_assets.idle_anim.clone()),
             observe(trigger_step_sound_effect),
         )],
@@ -130,7 +128,7 @@ fn update_animation_movement(
 
     let next_anim = if ground_norm.is_none_or(GroundNormal::is_grounded) {
         let vx = velocity.map_or(0.0, |v| v.x.abs());
-        if vx < 0.1 {
+        if intent.movement == 0.0 && vx < 0.1 {
             &assets.idle_anim
         } else if vx < 10.0 {
             &assets.walk_anim
