@@ -24,7 +24,7 @@ fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
     let s = vec2<f32>(textureDimensions(back_texture)) * flip_y * material.scale;
 
     let uv_back = (p - material.camera * vec2<f32>(0.4, 0)) / s;
-    let uv_light = (p - material.camera * vec2<f32>(0.6, 0)) / s;
+    let uv_light = (p - material.camera * vec2<f32>(0.7, 0)) / s;
     let uv_mid = (p - material.camera * vec2<f32>(0.3, 0)) / s;
     let uv_front = (p - material.camera * vec2<f32>(0.2, 0)) / s;
 
