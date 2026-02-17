@@ -14,6 +14,7 @@ struct Material {
     scale: vec2<f32>,
     offset: vec2<f32>,
     camera: vec2<f32>,
+    _pad: vec2<f32>,
 }
 
 @fragment

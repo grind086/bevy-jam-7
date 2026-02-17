@@ -91,10 +91,13 @@ impl Material2d for ParallaxMaterial {
 }
 
 #[derive(ShaderType)]
+#[repr(C)]
 struct ParallaxUniforms {
     scale: Vec2,
     offset: Vec2,
     camera_position: Vec2,
+    // Maintain 16-byte alignment for WASM targets
+    _pad: Vec2,
 }
 
 impl From<&ParallaxMaterial> for ParallaxUniforms {
@@ -103,6 +106,7 @@ impl From<&ParallaxMaterial> for ParallaxUniforms {
             scale: value.scale,
             offset: value.offset,
             camera_position: value.camera_position,
+            _pad: Vec2::ZERO,
         }
     }
 }
