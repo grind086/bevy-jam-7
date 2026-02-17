@@ -75,10 +75,10 @@ impl TilesetImageBuilder {
 
         // Fix an error where wgpu-hal heuristically decides that D2 array textures with mod 6
         // layers should be cubemaps.
-        if self.tiles % 6 == 0 {
+        if self.tiles.is_multiple_of(6) {
             info!("Inserting dummy tile to fix wgpu-hal issue");
             let tile_bytes = self.tile_size.element_product() * self.px_bytes;
-            self.data.extend(core::iter::repeat(0).take(tile_bytes));
+            self.data.extend(core::iter::repeat_n(0, tile_bytes));
             self.tiles += 1;
         }
 
