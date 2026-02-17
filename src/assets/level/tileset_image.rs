@@ -70,7 +70,18 @@ impl TilesetImageBuilder {
     }
 
     /// Returns the final tileset [`Image`].
-    pub fn build(self) -> Image {
+    pub fn build(mut self) -> Image {
+        info!("Built tileset with {} tiles", self.tiles);
+
+        // Fix an error where wgpu-hal heuristically decides that D2 array textures with mod 6
+        // layers should be cubemaps.
+        if self.tiles % 6 == 0 {
+            info!("Inserting dummy tile to fix wgpu-hal issue");
+            let tile_bytes = self.tile_size.element_product() * self.px_bytes;
+            self.data.extend(core::iter::repeat(0).take(tile_bytes));
+            self.tiles += 1;
+        }
+
         let mut image = Image::new(
             Extent3d {
                 width: self.tile_size.x as _,
