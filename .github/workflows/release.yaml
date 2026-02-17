@@ -95,6 +95,9 @@ env:
   continuous_deployment_to_itch: false
   continuous_deployment_to_github_pages: false
 
+  # Pinned nightly version. This should be kept in sync with the version in `ci.yaml`.
+  toolchain: nightly-2026-01-22
+
 jobs:
   # Forward some environment variables as outputs of this job.
   # This is needed because the `env` context can't be used in the `if:` condition of a job:
@@ -212,9 +215,10 @@ jobs:
 
       - name: Install Rust toolchain
         if: ${{ env.is_platform_enabled == 'true' }}
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@master
         with:
           targets: ${{ matrix.targets }}
+          toolchain: ${{ env.toolchain }}
 
       - name: Restore Rust cache
         if: ${{ env.is_platform_enabled == 'true' && github.event_name == 'push' }}
